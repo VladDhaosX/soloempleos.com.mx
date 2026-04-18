@@ -11,9 +11,7 @@ app.use(express.json());
 // Serve static files from project root
 // __dirname = /repo/api/, so '..' = repo root
 // process.cwd() fallback in case Hostinger sets cwd to repo root
-const STATIC_ROOT = path.join(__dirname, '..');
-app.use(express.static(STATIC_ROOT));
-app.use(express.static(process.cwd()));
+app.use(express.static(__dirname));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
