@@ -29,6 +29,8 @@
 
 .vacantes-section {
   padding: 2rem 0 3rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 .vacantes-title {
