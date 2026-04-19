@@ -10,7 +10,7 @@ app.use(express.json());
 
 // Serve static files from project root
 // __dirname = /repo/api/, so '..' = repo root
-app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static(path.join(__dirname, 'pages')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
