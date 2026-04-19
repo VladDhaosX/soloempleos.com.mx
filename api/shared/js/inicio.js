@@ -14,7 +14,8 @@
         return;
       }
 
-      grid.innerHTML = data.map(v => `
+      const MIN_CELLS = 8;
+      const items = data.map(v => `
         <div class="vacante-item">
           <img
             src="${v.url}"
@@ -24,6 +25,10 @@
           >
         </div>
       `).join('');
+      const empty = data.length < MIN_CELLS
+        ? Array(MIN_CELLS - data.length).fill('<div class="vacante-item vacante-empty"></div>').join('')
+        : '';
+      grid.innerHTML = items + empty;
     } catch (_) {
       grid.innerHTML = '<p class="vacantes-empty">No hay vacantes disponibles</p>';
     }

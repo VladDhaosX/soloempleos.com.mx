@@ -41,16 +41,37 @@
   border-bottom: 2px solid var(--color-border);
 }
 
+.vacantes-filters {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.filter-icon {
+  font-size: 1.4rem;
+  cursor: default;
+  opacity: 0.75;
+}
+
 .vacantes-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
+.vacante-item {
+  background: #1a1a1a;
+  min-height: 180px;
+}
+
 .vacante-item img {
   width: 100%;
   display: block;
-  background: #222;
+}
+
+.vacante-item.vacante-empty {
+  background: #1a1a1a;
+  border: 1px solid #222;
 }
 
 .vacantes-empty {
