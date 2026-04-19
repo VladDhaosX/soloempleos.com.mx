@@ -75,23 +75,24 @@
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  width: 40px;
-  height: 40px;
-  background-color: var(--color-bg-light);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
+  width: 42px;
+  height: 42px;
+  background-color: var(--color-accent);
+  border: none;
+  color: #fff;
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   display: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background-color 0.2s;
   z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 #scroll-top-btn:hover {
-  background-color: var(--color-border);
+  background-color: #1557b0;
 }
 
 #scroll-top-btn.visible {
