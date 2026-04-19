@@ -1,12 +1,25 @@
 [
-  {
-    "id": "1745012101",
-    "url": "/mty/uploads/vacantes/acerorey-operador.jpg",
-    "fecha": "2026-04-18"
-  },
-  {
-    "id": "1745012102",
-    "url": "/mty/uploads/vacantes/mty-vacante-2.jpg",
-    "fecha": "2026-04-17"
-  }
+  {"id": "1745100001", "url": "/mty/vacantes/2025-11/0-1.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100002", "url": "/mty/vacantes/2025-11/0.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100003", "url": "/mty/vacantes/2025-11/1.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100004", "url": "/mty/vacantes/2025-11/10.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100005", "url": "/mty/vacantes/2025-11/11.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100006", "url": "/mty/vacantes/2025-11/12.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100007", "url": "/mty/vacantes/2025-11/3.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100008", "url": "/mty/vacantes/2025-11/5.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100009", "url": "/mty/vacantes/2025-11/6-1.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100010", "url": "/mty/vacantes/2025-11/6-2.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100011", "url": "/mty/vacantes/2025-11/6-3.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100012", "url": "/mty/vacantes/2025-11/6.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100013", "url": "/mty/vacantes/2025-11/7-1.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100014", "url": "/mty/vacantes/2025-11/7.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100015", "url": "/mty/vacantes/2025-11/8.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100016", "url": "/mty/vacantes/2025-11/9.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100017", "url": "/mty/vacantes/5-13.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100018", "url": "/mty/vacantes/5-14.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100019", "url": "/mty/vacantes/5-16.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100020", "url": "/mty/vacantes/6-2.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100021", "url": "/mty/vacantes/6.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100022", "url": "/mty/vacantes/7-1.jpg", "fecha": "2026-04-18"},
+  {"id": "1745100023", "url": "/mty/vacantes/7-2.jpg", "fecha": "2026-04-18"}
 ]

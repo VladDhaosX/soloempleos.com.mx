@@ -14,21 +14,15 @@
 }
 
 .header-logo {
-  display: inline-block;
-  text-align: center;
-  margin: 0.6rem auto 0.4rem;
-  padding: 0.35rem 1.1rem;
-  font-size: 1.6rem;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  color: var(--color-text);
-  text-transform: uppercase;
-  border: 2px solid var(--color-text);
-  width: fit-content;
   display: flex;
   justify-content: center;
-  margin-left: auto;
-  margin-right: auto;
+  padding: 0.5rem 0 0.3rem;
+}
+
+.header-logo img {
+  max-height: 60px;
+  width: auto;
+  display: block;
 }
 
 .header-regions {

@@ -15,6 +15,9 @@
     root.querySelectorAll('[data-region-ofertas]').forEach(el => {
       if (el.tagName === 'A') el.href = `https://soloofertas.com/${region}/`;
     });
+
+    const logoImg = root.querySelector('[data-logo]');
+    if (logoImg) logoImg.src = `/shared/img/logo-${region}.jpg`;
   }
 
   async function loadFragment(url, placeholderId, insertedId) {
