@@ -88,15 +88,15 @@ app.use((req, res, next) => {
 app.use(express.static(PAGES_DIR));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/gdl', require('./routes/portada')('gdl'));
-app.use('/api/mty', require('./routes/portada')('mty'));
-app.use('/api/gdl', require('./routes/vacantes')('gdl'));
-app.use('/api/mty', require('./routes/vacantes')('mty'));
-app.use('/api/contacto', require('./routes/contacto'));
+app.use('/soloempleos/auth', require('./routes/auth'));
+app.use('/soloempleos/gdl', require('./routes/portada')('gdl'));
+app.use('/soloempleos/mty', require('./routes/portada')('mty'));
+app.use('/soloempleos/gdl', require('./routes/vacantes')('gdl'));
+app.use('/soloempleos/mty', require('./routes/vacantes')('mty'));
+app.use('/soloempleos/contacto', require('./routes/contacto'));
 
-// Fallback 404 for unknown API routes
-app.use('/api', (req, res) => {
+// Fallback 404 for unknown soloempleos routes
+app.use('/soloempleos', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 

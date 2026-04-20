@@ -134,6 +134,14 @@ body.page-ready .hero-video {
   transform: translateX(60px);
 }
 
+.vacante-item img {
+  transition: filter 0.25s ease;
+}
+
+.vacante-item:hover img {
+  filter: brightness(0.7);
+}
+
 .vacantes-grid.is-ready .vacante-item {
   animation: vacanteSlideIn 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -170,6 +178,58 @@ body.page-ready .hero-video {
   height: 100%;
   object-fit: cover;
   display: block;
+  cursor: zoom-in;
+}
+
+.vacante-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.vacante-modal.is-open {
+  display: flex;
+  animation: vacanteModalFade 180ms ease-out;
+}
+
+@keyframes vacanteModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.vacante-modal-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.vacante-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.vacante-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .vacante-item.vacante-empty {

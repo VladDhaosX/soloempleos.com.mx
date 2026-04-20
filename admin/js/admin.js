@@ -18,7 +18,7 @@
       }
     },
     async login(usuario, password) {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/soloempleos/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, password }),
@@ -108,7 +108,7 @@
     const fd = new FormData();
     fd.append('imagen', file);
 
-    const res = await apiRequest(`/api/${state.region}/portada`, { method: 'POST', body: fd });
+    const res = await apiRequest(`/soloempleos/${state.region}/portada`, { method: 'POST', body: fd });
     if (!res) return;
 
     if (res.ok) {
@@ -161,7 +161,7 @@
       UI.setStatus('vacantes-status', 'loading', `Subiendo ${i + 1} de ${total}...`);
       const fd = new FormData();
       fd.append('imagen', files[i]);
-      const res = await apiRequest(`/api/${state.region}/vacantes`, { method: 'POST', body: fd });
+      const res = await apiRequest(`/soloempleos/${state.region}/vacantes`, { method: 'POST', body: fd });
       if (!res) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -175,7 +175,7 @@
 
   async function deleteVacante(id) {
     if (!confirm('¿Eliminar esta vacante?')) return;
-    const res = await apiRequest(`/api/${state.region}/vacantes/${id}`, { method: 'DELETE' });
+    const res = await apiRequest(`/soloempleos/${state.region}/vacantes/${id}`, { method: 'DELETE' });
     if (!res) return;
     if (res.ok) {
       const item = document.querySelector(`.admin-vacante-item[data-id="${id}"]`);
