@@ -3,6 +3,16 @@
   height: 420px;
   overflow: hidden;
   background: #1a1a1a;
+  margin: 1.5rem 6rem 0;
+  max-width: 1400px;
+  border-radius: 16px;
+}
+
+@media (min-width: 1525px) {
+  .hero {
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .hero-video {
@@ -12,6 +22,31 @@
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+body.page-ready .hero-video {
+  animation: heroSlideDown 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes heroSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.page-ready .hero-video {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .hero-overlay {
@@ -43,8 +78,13 @@
 }
 
 .vacantes-section {
-  padding: 2.5rem 0 3rem;
+  padding: 2.5rem 6rem 3rem;
   background: #fff;
+}
+
+.vacantes-section > .container {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .vacantes-title {
@@ -90,6 +130,39 @@
   background: #1a1a1a;
   min-height: 180px;
   overflow: hidden;
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.vacantes-grid.is-ready .vacante-item {
+  animation: vacanteSlideIn 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.vacantes-grid.is-ready .vacante-item:nth-child(1)  { animation-delay: 0ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(2)  { animation-delay: 70ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(3)  { animation-delay: 140ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(4)  { animation-delay: 210ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(5)  { animation-delay: 280ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(6)  { animation-delay: 350ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(7)  { animation-delay: 420ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(8)  { animation-delay: 490ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(9)  { animation-delay: 560ms; }
+.vacantes-grid.is-ready .vacante-item:nth-child(n+10) { animation-delay: 630ms; }
+
+@keyframes vacanteSlideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vacante-item,
+  .vacantes-grid.is-ready .vacante-item {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .vacante-item img {
@@ -112,6 +185,16 @@
   padding: 3rem 0;
 }
 
+@media (max-width: 1100px) {
+  .vacantes-section {
+    padding: 2.5rem 2rem 3rem;
+  }
+
+  .hero {
+    margin: 1.5rem 2rem 0;
+  }
+}
+
 @media (max-width: 900px) {
   .vacantes-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -127,8 +210,13 @@
 }
 
 @media (max-width: 600px) {
+  .vacantes-section {
+    padding: 2rem 1rem 2.5rem;
+  }
+
   .hero {
     height: 280px;
+    margin: 1rem 1rem 0;
   }
 
   .vacantes-grid {
