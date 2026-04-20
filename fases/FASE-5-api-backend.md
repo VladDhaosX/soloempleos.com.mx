@@ -37,7 +37,7 @@
 ├── /mty/                       ← Misma estructura
 ├── /admin/
 │   └── index.html
-└── /api/
+└── /soloempleos/
     ├── server.js               ← Entry point
     ├── package.json
     ├── .env                    ← Variables de entorno (no commitear)
@@ -70,7 +70,7 @@ EMAIL_DESTINO=projectmanager@soloofertas.com
 
 ```json
 {
-  "name": "soloempleos-api",
+  "name": "soloempleos",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -106,12 +106,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
 
 // Rutas API
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/gdl', require('./routes/portada')('gdl'));
-app.use('/api/mty', require('./routes/portada')('mty'));
-app.use('/api/gdl', require('./routes/vacantes')('gdl'));
-app.use('/api/mty', require('./routes/vacantes')('mty'));
-app.use('/api/contacto', require('./routes/contacto'));
+app.use('/soloempleos/auth', require('./routes/auth'));
+app.use('/soloempleos/gdl', require('./routes/portada')('gdl'));
+app.use('/soloempleos/mty', require('./routes/portada')('mty'));
+app.use('/soloempleos/gdl', require('./routes/vacantes')('gdl'));
+app.use('/soloempleos/mty', require('./routes/vacantes')('mty'));
+app.use('/soloempleos/contacto', require('./routes/contacto'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Solo Empleos API corriendo en puerto ${PORT}`));
@@ -121,7 +121,7 @@ app.listen(PORT, () => console.log(`Solo Empleos API corriendo en puerto ${PORT}
 
 ## Endpoints requeridos
 
-### `POST /api/auth/login`
+### `POST /soloempleos/auth/login`
 **Propósito:** autenticar al admin, retornar JWT
 
 **Request:**
@@ -165,7 +165,7 @@ function requireAuth(req, res, next) {
 
 ---
 
-### `POST /api/gdl/portada` y `POST /api/mty/portada`
+### `POST /soloempleos/gdl/portada` y `POST /soloempleos/mty/portada`
 **Propósito:** subir nueva imagen de portada del día
 **Auth requerida:** sí
 
@@ -189,7 +189,7 @@ function requireAuth(req, res, next) {
 
 ---
 
-### `POST /api/gdl/vacantes` y `POST /api/mty/vacantes`
+### `POST /soloempleos/gdl/vacantes` y `POST /soloempleos/mty/vacantes`
 **Propósito:** subir nueva imagen de vacante, agregarla al grid
 **Auth requerida:** sí
 
@@ -215,7 +215,7 @@ function requireAuth(req, res, next) {
 
 ---
 
-### `DELETE /api/gdl/vacantes/:id` y `DELETE /api/mty/vacantes/:id`
+### `DELETE /soloempleos/gdl/vacantes/:id` y `DELETE /soloempleos/mty/vacantes/:id`
 **Propósito:** eliminar vacante del grid
 **Auth requerida:** sí
 
@@ -237,7 +237,7 @@ function requireAuth(req, res, next) {
 
 ---
 
-### `POST /api/contacto`
+### `POST /soloempleos/contacto`
 **Propósito:** enviar email del formulario de contacto
 **Auth requerida:** no
 
@@ -308,7 +308,7 @@ const transporter = nodemailer.createTransport({
 ## Configuración en Hostinger
 
 En hPanel → Node.js Apps:
-- Entry point: `api/server.js`
+- Entry point: `soloempleos/server.js`
 - Node version: 18+
 - Variables de entorno: configurar desde hPanel (no subir `.env` al servidor)
 - Puerto: el que Hostinger asigne (leer de `process.env.PORT`)
@@ -317,21 +317,21 @@ En hPanel → Node.js Apps:
 
 ## Entregables
 
-1. `/api/package.json`
-2. `/api/server.js`
-3. `/api/routes/auth.js`
-4. `/api/routes/portada.js`
-5. `/api/routes/vacantes.js`
-6. `/api/routes/contacto.js`
-7. `/api/.env.example` (sin valores reales, solo keys)
+1. `/soloempleos/package.json`
+2. `/soloempleos/server.js`
+3. `/soloempleos/routes/auth.js`
+4. `/soloempleos/routes/portada.js`
+5. `/soloempleos/routes/vacantes.js`
+6. `/soloempleos/routes/contacto.js`
+7. `/soloempleos/.env.example` (sin valores reales, solo keys)
 
 ## Criterio de éxito
 
-- `POST /api/auth/login` con credenciales correctas retorna JWT
-- `POST /api/auth/login` con credenciales incorrectas retorna 401
+- `POST /soloempleos/auth/login` con credenciales correctas retorna JWT
+- `POST /soloempleos/auth/login` con credenciales incorrectas retorna 401
 - Ruta sin token retorna 401
-- `POST /api/gdl/portada` sube imagen y actualiza portada.json
-- `POST /api/gdl/vacantes` sube imagen y la agrega al inicio de vacantes.json
-- `DELETE /api/gdl/vacantes/:id` elimina item del JSON
-- `POST /api/contacto` envía email real a projectmanager@soloofertas.com
+- `POST /soloempleos/gdl/portada` sube imagen y actualiza portada.json
+- `POST /soloempleos/gdl/vacantes` sube imagen y la agrega al inicio de vacantes.json
+- `DELETE /soloempleos/gdl/vacantes/:id` elimina item del JSON
+- `POST /soloempleos/contacto` envía email real a projectmanager@soloofertas.com
 - Rutas MTY funcionan igual que GDL con sus propios archivos

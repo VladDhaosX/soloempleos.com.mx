@@ -111,7 +111,7 @@ Frontend renderiza listado
 ├── /mty/                   ← Misma estructura para Monterrey
 ├── /admin/                 ← Panel de administracion
 │   └── index.html          ← UI del admin
-└── /api/                   ← Node.js endpoints
+└── /soloempleos/           ← Node.js endpoints
     ├── noticias.js
     ├── edicion.js
     └── ofertas.js

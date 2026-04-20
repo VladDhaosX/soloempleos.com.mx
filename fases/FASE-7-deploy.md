@@ -40,7 +40,7 @@ El sitio consiste en archivos estáticos (HTML/CSS/JS/JSON/imágenes) servidos p
 │   ├── css/
 │   ├── js/
 │   └── img/
-└── /api/                       ← app Node.js
+└── /soloempleos/               ← app Node.js
     ├── package.json
     ├── server.js
     └── /routes/
@@ -78,7 +78,7 @@ El sitio consiste en archivos estáticos (HTML/CSS/JS/JSON/imágenes) servidos p
 
 **Via File Manager de hPanel:**
 1. hPanel → File Manager → `public_html`
-2. Subir todos los archivos del proyecto (excepto `/api/`)
+2. Subir todos los archivos del proyecto (excepto `/soloempleos/`)
 3. Verificar permisos: carpetas `755`, archivos `644`
 4. Verificar que `/gdl/data/` y `/mty/data/` tienen los JSON iniciales con datos reales
 
@@ -110,13 +110,13 @@ En hPanel → **Node.js** → Create Application:
 | Campo | Valor |
 |---|---|
 | Node.js version | 18.x o superior |
-| Application root | `api` |
-| Application URL | `soloempleos.com.mx/api` |
+| Application root | `soloempleos` |
+| Application URL | `soloempleos.com.mx/soloempleos` |
 | Application startup file | `server.js` |
 
 Después de crear:
 1. Click en **"Open terminal"** en hPanel (o SSH si está disponible)
-2. Navegar a carpeta de la app: `cd /home/{usuario}/domains/soloempleos.com.mx/api`
+2. Navegar a carpeta de la app: `cd /home/{usuario}/domains/soloempleos.com.mx/soloempleos`
 3. Instalar dependencias: `npm install`
 4. La app arranca automáticamente (Hostinger la gestiona)
 

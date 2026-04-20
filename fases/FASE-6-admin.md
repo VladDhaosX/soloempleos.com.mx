@@ -38,7 +38,7 @@ El operador sube diariamente:
 1. Usuario entra a `/admin/`
 2. JS verifica si hay token válido en `localStorage.getItem('token')`
 3. Si no hay token → mostrar pantalla de login
-4. Usuario ingresa usuario + contraseña → `POST /api/auth/login`
+4. Usuario ingresa usuario + contraseña → `POST /soloempleos/auth/login`
 5. Si respuesta 200 → guardar token en `localStorage`, mostrar panel
 6. Si respuesta 401 → mostrar error "Credenciales incorrectas"
 7. Token tiene duración de 8 horas — si expira, redirigir a login
@@ -101,7 +101,7 @@ Todo el contenido del panel reacciona al selector GDL/MTY. Al cambiar región, s
 3. Click en imagen o en botón → abre selector de archivo
 4. Al seleccionar archivo:
    - Mostrar preview local inmediato (antes de subir)
-   - `POST /api/{region}/portada` con `multipart/form-data`
+   - `POST /soloempleos/{region}/portada` con `multipart/form-data`
    - Header: `Authorization: Bearer {token}`
    - Mostrar indicador de carga durante upload
    - Al éxito: actualizar preview con nueva imagen
@@ -133,13 +133,13 @@ Todo el contenido del panel reacciona al selector GDL/MTY. Al cambiar región, s
 **Subir vacante(s):**
 1. Input file acepta múltiples archivos (`multiple`)
 2. Al seleccionar: iterar archivos, subir uno por uno secuencialmente
-3. `POST /api/{region}/vacantes` por cada archivo
+3. `POST /soloempleos/{region}/vacantes` por cada archivo
 4. Mostrar barra de progreso o contador "Subiendo 2 de 3..."
 5. Al terminar: recargar grid desde JSON actualizado
 
 **Eliminar vacante:**
 1. Click en ✕ → confirmar: "¿Eliminar esta vacante?"
-2. `DELETE /api/{region}/vacantes/{id}`
+2. `DELETE /soloempleos/{region}/vacantes/{id}`
 3. Al éxito: remover del grid sin recargar página
 4. Al error: mostrar mensaje
 

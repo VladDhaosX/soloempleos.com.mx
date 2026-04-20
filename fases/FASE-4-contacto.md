@@ -1,7 +1,7 @@
 # FASE 4 — Página Contacto (`/gdl/contacto/`)
 
 **Estimado:** 2-3 hrs
-**Depende de:** FASE 1 (header, footer, CSS base), FASE 5 (endpoint POST /api/contacto)
+**Depende de:** FASE 1 (header, footer, CSS base), FASE 5 (endpoint POST /soloempleos/contacto)
 **Bloquea:** nada
 
 ---
@@ -120,7 +120,7 @@ form.addEventListener('submit', async (e) => {
   botonEnviar.textContent = 'Enviando...';
   
   try {
-    const res = await fetch('/api/contacto', {
+    const res = await fetch('/soloempleos/contacto', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, email, asunto, mensaje })
@@ -152,7 +152,7 @@ form.addEventListener('submit', async (e) => {
 ## Endpoint que consume (FASE 5)
 
 ```
-POST /api/contacto
+POST /soloempleos/contacto
 Content-Type: application/json
 
 {
