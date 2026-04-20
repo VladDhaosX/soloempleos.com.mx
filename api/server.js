@@ -2,15 +2,72 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from project root
-// __dirname = /repo/api/, so '..' = repo root
-app.use(express.static(path.join(__dirname, 'pages')));
+const PAGES_DIR = path.join(__dirname, 'pages');
+const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
+const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
+
+function readFragment(p) {
+  try { return fs.readFileSync(p, 'utf8'); } catch (_) { return ''; }
+}
+
+function injectFragments(html) {
+  return html
+    .replace('<div id="header-placeholder"></div>', readFragment(HEADER_FRAGMENT))
+    .replace('<div id="footer-placeholder"></div>', readFragment(FOOTER_FRAGMENT));
+}
+
+function renderVacantes(region) {
+  const file = path.join(PAGES_DIR, region, 'data', 'vacantes.json');
+  let data;
+  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
+  if (!Array.isArray(data) || data.length === 0) {
+    return '<p class="vacantes-empty">No hay vacantes disponibles</p>';
+  }
+  const MIN_CELLS = 8;
+  const esc = s => String(s).replace(/"/g, '&quot;');
+  const items = data.map(v => (
+    `<div class="vacante-item">` +
+      `<img src="${esc(v.url)}" alt="Vacante" loading="lazy" ` +
+      `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
+    `</div>`
+  )).join('');
+  const empty = data.length < MIN_CELLS
+    ? '<div class="vacante-item vacante-empty"></div>'.repeat(MIN_CELLS - data.length)
+    : '';
+  return items + empty;
+}
+
+function injectVacantes(html, region) {
+  if (!region) return html;
+  return html.replace('<!-- SSR:VACANTES -->', renderVacantes(region));
+}
+
+app.use((req, res, next) => {
+  let urlPath = decodeURIComponent(req.path);
+  if (urlPath.endsWith('/')) urlPath += 'index.html';
+  if (!urlPath.endsWith('.html')) return next();
+
+  const filePath = path.join(PAGES_DIR, urlPath);
+  if (!filePath.startsWith(PAGES_DIR)) return next();
+
+  const regionMatch = urlPath.match(/^\/(gdl|mty)\//);
+  const region = regionMatch ? regionMatch[1] : null;
+
+  fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) return next();
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.send(injectVacantes(injectFragments(html), region));
+  });
+});
+
+app.use(express.static(PAGES_DIR));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

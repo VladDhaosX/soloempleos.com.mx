@@ -1,4 +1,7 @@
 (function () {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('beforeunload', () => window.scrollTo(0, 0));
+
   const region = document.body.dataset.region || 'gdl';
 
   function adjustRegionLinks(root) {
@@ -20,18 +23,6 @@
     if (logoImg) logoImg.src = `/shared/img/logo-${region}.jpg`;
   }
 
-  async function loadFragment(url, placeholderId, insertedId) {
-    const placeholder = document.getElementById(placeholderId);
-    if (!placeholder) return;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) return;
-      placeholder.outerHTML = await res.text();
-      const inserted = document.getElementById(insertedId);
-      if (inserted) adjustRegionLinks(inserted);
-    } catch (_) {}
-  }
-
   function initScrollTop() {
     const btn = document.getElementById('scroll-top-btn');
     if (!btn) return;
@@ -41,11 +32,9 @@
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([
-      loadFragment('/shared/header.html', 'header-placeholder', 'site-header'),
-      loadFragment('/shared/footer.html', 'footer-placeholder', 'site-footer'),
-    ]);
+  document.addEventListener('DOMContentLoaded', () => {
+    adjustRegionLinks(document);
     initScrollTop();
+    requestAnimationFrame(() => document.body.classList.add('page-ready'));
   });
 })();

@@ -77,8 +77,7 @@ Formulario de contacto oscuro con título "PUBLICIDAD — contáctanos" y campos
 
 ```html
 <form id="contacto-form" novalidate>
-  <h2>PUBLICIDAD</h2>
-  <h3>contáctanos</h3>
+  <h3>Contáctanos</h3>
 
   <label for="nombre">Tu nombre</label>
   <input type="text" id="nombre" name="nombre" required>
