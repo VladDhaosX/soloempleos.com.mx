@@ -49,6 +49,24 @@ function injectVacantes(html, region) {
   return html.replace('<!-- SSR:VACANTES -->', renderVacantes(region));
 }
 
+function renderPortadaUrl(region) {
+  const file = path.join(PAGES_DIR, region, 'data', 'portada.json');
+  try {
+    const { url, version } = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!url) return '/shared/img/placeholder.svg';
+    return `${url}?v=${version || Date.now()}`;
+  } catch (_) {
+    return '/shared/img/placeholder.svg';
+  }
+}
+
+function injectPortadas(html) {
+  if (!html.includes('__SSR_PORTADA_')) return html;
+  return html
+    .replace('__SSR_PORTADA_GDL__', renderPortadaUrl('gdl'))
+    .replace('__SSR_PORTADA_MTY__', renderPortadaUrl('mty'));
+}
+
 app.use((req, res, next) => {
   let urlPath = decodeURIComponent(req.path);
   if (urlPath.endsWith('/')) urlPath += 'index.html';
@@ -63,7 +81,7 @@ app.use((req, res, next) => {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
     res.set('Content-Type', 'text/html; charset=utf-8');
-    res.send(injectVacantes(injectFragments(html), region));
+    res.send(injectPortadas(injectVacantes(injectFragments(html), region)));
   });
 });
 
