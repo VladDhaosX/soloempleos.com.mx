@@ -1,5 +1,6 @@
 (function () {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const TEL_RE = /^[\d\s+()\-]{10,}$/;
 
   function getVal(id) {
     return (document.getElementById(id) || {}).value || '';
@@ -13,17 +14,19 @@
   }
 
   function clearErrors() {
-    ['nombre', 'email', 'asunto'].forEach(f => setError(f, ''));
+    ['nombre', 'email', 'telefono', 'asunto'].forEach(f => setError(f, ''));
   }
 
   function validate() {
     let ok = true;
     const nombre = getVal('nombre').trim();
     const email = getVal('email').trim();
+    const telefono = getVal('telefono').trim();
     const asunto = getVal('asunto').trim();
 
     if (!nombre) { setError('nombre', 'El nombre es requerido'); ok = false; }
     if (!email || !EMAIL_RE.test(email)) { setError('email', 'Ingresa un correo válido'); ok = false; }
+    if (!telefono || !TEL_RE.test(telefono)) { setError('telefono', 'Ingresa un teléfono válido'); ok = false; }
     if (!asunto) { setError('asunto', 'El asunto es requerido'); ok = false; }
     return ok;
   }
@@ -58,6 +61,7 @@
       const payload = {
         nombre: getVal('nombre').trim(),
         email: getVal('email').trim(),
+        telefono: getVal('telefono').trim(),
         asunto: getVal('asunto').trim(),
         mensaje: getVal('mensaje').trim(),
       };
