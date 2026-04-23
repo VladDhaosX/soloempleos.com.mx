@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 const PAGES_DIR = path.join(__dirname, 'pages');
+const ADMIN_DIR = path.join(__dirname, 'admin');
 const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
 const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
 
@@ -85,6 +86,7 @@ app.use((req, res, next) => {
   });
 });
 
+app.use('/admin', express.static(ADMIN_DIR));
 app.use(express.static(PAGES_DIR));
 
 // Routes
