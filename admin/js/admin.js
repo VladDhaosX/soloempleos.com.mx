@@ -145,8 +145,7 @@
     grid.innerHTML = data.map(v => {
       const rot = v.rotation || 0;
       return `
-      <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}" draggable="true">
-        <span class="drag-handle" title="Arrastrar para reordenar">&#9776;</span>
+      <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}">
         <img src="${v.url}" alt="Vacante" loading="lazy"
              style="transform:rotate(${rot}deg)"
              onerror="this.onerror=null;this.style.opacity='.3'">
@@ -167,9 +166,12 @@
   }
 
   function initDragAndDrop(grid) {
+    // ── Desktop (HTML5 DnD) ──────────────────────────
     let dragSrc = null;
 
     grid.querySelectorAll('.admin-vacante-item').forEach(item => {
+      item.setAttribute('draggable', 'true');
+
       item.addEventListener('dragstart', (e) => {
         dragSrc = item;
         item.classList.add('dragging');
@@ -193,21 +195,83 @@
       item.addEventListener('drop', (e) => {
         e.preventDefault();
         if (!dragSrc || dragSrc === item) return;
-
-        const items = [...grid.querySelectorAll('.admin-vacante-item')];
-        const srcIdx = items.indexOf(dragSrc);
-        const dstIdx = items.indexOf(item);
-
-        if (srcIdx < dstIdx) {
-          item.after(dragSrc);
-        } else {
-          item.before(dragSrc);
-        }
-
-        item.classList.remove('drag-over');
-        saveOrder(grid);
+        reorderItems(grid, dragSrc, item);
       });
     });
+
+    // ── Mobile (Touch) ───────────────────────────────
+    let touchSrc = null;
+    let touchClone = null;
+    let touchOffsetX = 0;
+    let touchOffsetY = 0;
+
+    function getItemAtPoint(x, y) {
+      if (touchClone) touchClone.style.display = 'none';
+      const el = document.elementFromPoint(x, y);
+      if (touchClone) touchClone.style.display = '';
+      return el && el.closest('.admin-vacante-item');
+    }
+
+    grid.querySelectorAll('.admin-vacante-item').forEach(item => {
+      item.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        const rect = item.getBoundingClientRect();
+        touchSrc = item;
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
+
+        touchClone = item.cloneNode(true);
+        Object.assign(touchClone.style, {
+          position: 'fixed',
+          width: rect.width + 'px',
+          height: rect.height + 'px',
+          left: (touch.clientX - touchOffsetX) + 'px',
+          top: (touch.clientY - touchOffsetY) + 'px',
+          opacity: '0.75',
+          pointerEvents: 'none',
+          zIndex: '9999',
+          borderRadius: '3px',
+          transition: 'none',
+        });
+        document.body.appendChild(touchClone);
+        item.classList.add('dragging');
+      }, { passive: true });
+
+      item.addEventListener('touchmove', (e) => {
+        if (!touchSrc || !touchClone) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+        touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+
+        const target = getItemAtPoint(touch.clientX, touch.clientY);
+        grid.querySelectorAll('.admin-vacante-item').forEach(i => i.classList.remove('drag-over'));
+        if (target && target !== touchSrc) target.classList.add('drag-over');
+      }, { passive: false });
+
+      item.addEventListener('touchend', (e) => {
+        if (!touchSrc || !touchClone) return;
+        const touch = e.changedTouches[0];
+        touchClone.remove();
+        touchClone = null;
+        touchSrc.classList.remove('dragging');
+        grid.querySelectorAll('.admin-vacante-item').forEach(i => i.classList.remove('drag-over'));
+
+        const target = getItemAtPoint(touch.clientX, touch.clientY);
+        if (target && target !== touchSrc) reorderItems(grid, touchSrc, target);
+        touchSrc = null;
+      });
+    });
+  }
+
+  function reorderItems(grid, src, target) {
+    const items = [...grid.querySelectorAll('.admin-vacante-item')];
+    const srcIdx = items.indexOf(src);
+    const dstIdx = items.indexOf(target);
+    if (srcIdx < dstIdx) target.after(src);
+    else target.before(src);
+    target.classList.remove('drag-over');
+    saveOrder(grid);
   }
 
   async function saveOrder(grid) {
