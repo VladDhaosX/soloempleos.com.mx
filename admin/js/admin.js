@@ -78,6 +78,25 @@
       const el = document.getElementById(id);
       if (el) { el.className = 'upload-status'; el.textContent = ''; }
     },
+    confirm(msg) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'admin-modal-overlay';
+        overlay.innerHTML = `
+          <div class="admin-modal">
+            <p class="admin-modal-msg">${msg}</p>
+            <div class="admin-modal-actions">
+              <button class="btn-modal btn-modal-cancel">Cancelar</button>
+              <button class="btn-modal btn-modal-confirm">Confirmar</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        const done = (v) => { overlay.remove(); resolve(v); };
+        overlay.querySelector('.btn-modal-cancel').addEventListener('click', () => done(false));
+        overlay.querySelector('.btn-modal-confirm').addEventListener('click', () => done(true));
+        overlay.addEventListener('click', e => { if (e.target === overlay) done(false); });
+      });
+    },
   };
 
   // ──────────────────────────
@@ -290,6 +309,39 @@
     }
   }
 
+  async function replaceCarpetaVacantes(files) {
+    const images = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!images.length) {
+      UI.setStatus('vacantes-status', 'error', 'No se encontraron imágenes en la carpeta');
+      return;
+    }
+
+    images.sort((a, b) => {
+      const numA = parseInt(a.name, 10);
+      const numB = parseInt(b.name, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.name.localeCompare(b.name);
+    });
+
+    if (!await UI.confirm(`¿Reemplazar todas las vacantes con ${images.length} imágenes de la carpeta?\nEsta acción elimina las vacantes actuales.`)) return;
+
+    UI.setStatus('vacantes-status', 'loading', `Subiendo ${images.length} imagen(es)...`);
+    const fd = new FormData();
+    images.forEach(f => fd.append('imagenes', f));
+
+    const res = await apiRequest(`/soloempleos/${state.region}/vacantes/replace-all`, { method: 'POST', body: fd });
+    if (!res) return;
+
+    if (res.ok) {
+      const d = await res.json();
+      UI.setStatus('vacantes-status', 'ok', `${d.total} vacante(s) reemplazadas.`);
+      await loadVacantes();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      UI.setStatus('vacantes-status', 'error', d.error || 'Error al reemplazar');
+    }
+  }
+
   async function uploadVacantes(files) {
     const total = files.length;
     for (let i = 0; i < total; i++) {
@@ -324,14 +376,14 @@
   }
 
   async function deleteVacante(id) {
-    if (!confirm('¿Eliminar esta vacante?')) return;
+    if (!await UI.confirm('¿Eliminar esta vacante?')) return;
     const res = await apiRequest(`/soloempleos/${state.region}/vacantes/${id}`, { method: 'DELETE' });
     if (!res) return;
     if (res.ok) {
       const item = document.querySelector(`.admin-vacante-item[data-id="${id}"]`);
       if (item) item.remove();
     } else {
-      alert('Error al eliminar vacante');
+      UI.setStatus('vacantes-status', 'error', 'Error al eliminar vacante');
     }
   }
 
@@ -408,6 +460,13 @@
     document.getElementById('input-vacantes').addEventListener('change', (e) => {
       const files = Array.from(e.target.files);
       if (files.length) uploadVacantes(files);
+      e.target.value = '';
+    });
+
+    // Vacantes replace-all (folder)
+    document.getElementById('input-vacantes-carpeta').addEventListener('change', (e) => {
+      const files = e.target.files;
+      if (files.length) replaceCarpetaVacantes(files);
       e.target.value = '';
     });
   });

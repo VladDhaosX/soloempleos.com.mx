@@ -34,6 +34,17 @@ module.exports = function (region) {
     limits: { fileSize: 10 * 1024 * 1024 },
   });
 
+  const uploadMany = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.startsWith('image/')) {
+        return cb(new Error('Solo se permiten imágenes'));
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 10 * 1024 * 1024, files: 200 },
+  });
+
   function readVacantes() {
     try {
       return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
@@ -46,6 +57,37 @@ module.exports = function (region) {
     fs.mkdirSync(path.dirname(jsonPath), { recursive: true });
     fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
   }
+
+  router.post('/vacantes/replace-all', requireAuth, uploadMany.array('imagenes', 200), (req, res) => {
+    const files = req.files || [];
+    if (!files.length) {
+      return res.status(400).json({ error: 'No se recibieron imágenes' });
+    }
+
+    try {
+      // Delete all existing vacante files
+      const existing = readVacantes();
+      for (const v of existing) {
+        const filepath = path.join(uploadDir, path.basename(v.url));
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      }
+
+      const now = new Date().toISOString().slice(0, 10);
+      const base = Date.now();
+      const lista = files.map((f, i) => ({
+        id: String(base + i),
+        url: `/${region}/uploads/vacantes/${f.filename}`,
+        fecha: now,
+        rotation: 0,
+      }));
+
+      writeVacantes(lista);
+      res.json({ ok: true, total: lista.length });
+    } catch (err) {
+      console.error('vacantes replace-all error:', err);
+      res.status(500).json({ error: 'Error interno' });
+    }
+  });
 
   router.post('/vacantes', requireAuth, upload.single('imagen'), (req, res) => {
     if (!req.file) {
