@@ -276,6 +276,11 @@ button[type="submit"]:disabled {
   border: 1px solid var(--border);
   border-radius: 3px;
   overflow: hidden;
+  cursor: grab;
+}
+
+.admin-vacante-item:active {
+  cursor: grabbing;
 }
 
 .admin-vacante-item img {
@@ -314,30 +319,6 @@ button[type="submit"]:disabled {
 }
 
 .btn-delete-vacante:hover {
-  opacity: 1;
-}
-
-.drag-handle {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 22px;
-  height: 22px;
-  background: rgba(0,0,0,.55);
-  color: #ccc;
-  border-radius: 3px;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  opacity: 0;
-  transition: opacity 0.15s;
-  user-select: none;
-  z-index: 1;
-}
-
-.admin-vacante-item:hover .drag-handle {
   opacity: 1;
 }
 
