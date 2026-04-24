@@ -87,6 +87,8 @@ app.use((req, res, next) => {
   });
 });
 
+app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio'));
+
 app.use('/admin', express.static(ADMIN_DIR));
 app.use(express.static(PAGES_DIR));
 
