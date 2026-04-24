@@ -142,17 +142,88 @@
       grid.innerHTML = '<p style="color:#aaa;font-size:.85rem">Sin vacantes</p>';
       return;
     }
-    grid.innerHTML = data.map(v => `
-      <div class="admin-vacante-item" data-id="${v.id}">
+    grid.innerHTML = data.map(v => {
+      const rot = v.rotation || 0;
+      return `
+      <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}" draggable="true">
+        <span class="drag-handle" title="Arrastrar para reordenar">&#9776;</span>
         <img src="${v.url}" alt="Vacante" loading="lazy"
+             style="transform:rotate(${rot}deg)"
              onerror="this.onerror=null;this.style.opacity='.3'">
+        <button class="btn-rotate-vacante" data-id="${v.id}" title="Rotar 90°">&#8635;</button>
         <button class="btn-delete-vacante" data-id="${v.id}" title="Eliminar">&#10005;</button>
       </div>
-    `).join('');
+    `}).join('');
 
     grid.querySelectorAll('.btn-delete-vacante').forEach(btn => {
       btn.addEventListener('click', () => deleteVacante(btn.dataset.id));
     });
+
+    grid.querySelectorAll('.btn-rotate-vacante').forEach(btn => {
+      btn.addEventListener('click', () => rotateVacante(btn.dataset.id));
+    });
+
+    initDragAndDrop(grid);
+  }
+
+  function initDragAndDrop(grid) {
+    let dragSrc = null;
+
+    grid.querySelectorAll('.admin-vacante-item').forEach(item => {
+      item.addEventListener('dragstart', (e) => {
+        dragSrc = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        grid.querySelectorAll('.admin-vacante-item').forEach(i => i.classList.remove('drag-over'));
+      });
+
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (item !== dragSrc) {
+          grid.querySelectorAll('.admin-vacante-item').forEach(i => i.classList.remove('drag-over'));
+          item.classList.add('drag-over');
+        }
+      });
+
+      item.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!dragSrc || dragSrc === item) return;
+
+        const items = [...grid.querySelectorAll('.admin-vacante-item')];
+        const srcIdx = items.indexOf(dragSrc);
+        const dstIdx = items.indexOf(item);
+
+        if (srcIdx < dstIdx) {
+          item.after(dragSrc);
+        } else {
+          item.before(dragSrc);
+        }
+
+        item.classList.remove('drag-over');
+        saveOrder(grid);
+      });
+    });
+  }
+
+  async function saveOrder(grid) {
+    const ids = [...grid.querySelectorAll('.admin-vacante-item')].map(el => el.dataset.id);
+    UI.setStatus('vacantes-status', 'loading', 'Guardando orden...');
+    const res = await apiRequest(`/soloempleos/${state.region}/vacantes/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res) return;
+    if (res.ok) {
+      UI.setStatus('vacantes-status', 'ok', 'Orden guardado.');
+    } else {
+      UI.setStatus('vacantes-status', 'error', 'Error al guardar orden');
+    }
   }
 
   async function uploadVacantes(files) {
@@ -171,6 +242,21 @@
     }
     UI.setStatus('vacantes-status', 'ok', `${total} vacante(s) subida(s).`);
     await loadVacantes();
+  }
+
+  async function rotateVacante(id) {
+    const res = await apiRequest(`/soloempleos/${state.region}/vacantes/${id}/rotate`, { method: 'PUT' });
+    if (!res) return;
+    if (res.ok) {
+      const { rotation } = await res.json();
+      const item = document.querySelector(`.admin-vacante-item[data-id="${id}"]`);
+      if (item) {
+        item.dataset.rotation = rotation;
+        item.querySelector('img').style.transform = `rotate(${rotation}deg)`;
+      }
+    } else {
+      UI.setStatus('vacantes-status', 'error', 'Error al rotar');
+    }
   }
 
   async function deleteVacante(id) {

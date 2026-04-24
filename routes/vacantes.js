@@ -68,6 +68,40 @@ module.exports = function (region) {
     }
   });
 
+  router.put('/vacantes/reorder', requireAuth, (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: 'ids debe ser un array' });
+    }
+    try {
+      const lista = readVacantes();
+      const map = Object.fromEntries(lista.map(v => [v.id, v]));
+      const reordered = ids.map(id => map[id]).filter(Boolean);
+      // Keep any items not included in ids at the end
+      const missing = lista.filter(v => !ids.includes(v.id));
+      writeVacantes([...reordered, ...missing]);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error('vacantes reorder error:', err);
+      res.status(500).json({ error: 'Error interno' });
+    }
+  });
+
+  router.put('/vacantes/:id/rotate', requireAuth, (req, res) => {
+    const { id } = req.params;
+    try {
+      const lista = readVacantes();
+      const item = lista.find(v => v.id === id);
+      if (!item) return res.status(404).json({ error: 'Vacante no encontrada' });
+      item.rotation = (((item.rotation || 0) + 90) % 360);
+      writeVacantes(lista);
+      res.json({ ok: true, rotation: item.rotation });
+    } catch (err) {
+      console.error('vacantes rotate error:', err);
+      res.status(500).json({ error: 'Error interno' });
+    }
+  });
+
   router.delete('/vacantes/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     try {
