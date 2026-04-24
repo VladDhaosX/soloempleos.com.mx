@@ -125,6 +125,18 @@ button[type="submit"]:disabled {
   cursor: not-allowed;
 }
 
+.upload-btn-replace {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+  margin-top: 0.5rem;
+}
+
+.upload-btn-replace:hover {
+  background: #2a1010;
+  border-color: #dc2626;
+  color: #fff;
+}
+
 /* ──────────────────────────
    ADMIN PANEL
 ────────────────────────── */
@@ -330,6 +342,86 @@ button[type="submit"]:disabled {
 .admin-vacante-item.drag-over {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* ──────────────────────────
+   MODAL CONFIRM
+────────────────────────── */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.admin-modal {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 100%;
+  animation: slideUp 0.15s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+.admin-modal-msg {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+.admin-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.btn-modal {
+  padding: 0.5rem 1.1rem;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-modal-cancel {
+  background: #222;
+  color: var(--muted);
+}
+
+.btn-modal-cancel:hover {
+  background: #2a2a2a;
+  color: var(--text);
+}
+
+.btn-modal-confirm {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+.btn-modal-confirm:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
 }
 
 @media (max-width: 767px) {

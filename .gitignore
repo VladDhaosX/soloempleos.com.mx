@@ -7,3 +7,5 @@ Thumbs.db
 .playwright-mcp/
 local-*.png
 original-*.png
+pages/*/data/portada.json
+pages/*/data/vacantes.json
