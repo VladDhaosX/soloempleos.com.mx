@@ -1,13 +1,9 @@
 [
   {
-    "id": "1745012001",
-    "url": "/gdl/uploads/vacantes/1-37.jpg",
-    "fecha": "2025-09-01"
-  },
-  {
     "id": "1745012002",
     "url": "/gdl/uploads/vacantes/2-32.jpg",
-    "fecha": "2025-09-01"
+    "fecha": "2025-09-01",
+    "rotation": 0
   },
   {
     "id": "1745012003",
@@ -17,6 +13,11 @@
   {
     "id": "1745012004",
     "url": "/gdl/uploads/vacantes/4-28.jpg",
+    "fecha": "2025-09-01"
+  },
+  {
+    "id": "1745012001",
+    "url": "/gdl/uploads/vacantes/1-37.jpg",
     "fecha": "2025-09-01"
   },
   {
