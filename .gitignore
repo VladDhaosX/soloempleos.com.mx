@@ -9,3 +9,10 @@ local-*.png
 original-*.png
 pages/*/data/portada.json
 pages/*/data/vacantes.json
+pages/*/uploads/
+jpg/
+playwright-recordings/
+.seo-audit/
+evidencia-cliente-fase-1/
+Plan_De_Trabajo_SEO.docx
+Reporte_Fase_1_SEO.md
