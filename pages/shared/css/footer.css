@@ -14,12 +14,13 @@
   gap: 2rem;
 }
 
-.footer-section h4 {
+.footer-title {
   color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 0.75rem;
   font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .footer-section ul {
