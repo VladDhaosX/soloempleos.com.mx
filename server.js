@@ -33,6 +33,11 @@ function renderVacantes(region) {
   }
   const MIN_CELLS = 8;
   const esc = s => String(s).replace(/"/g, '&quot;');
+  const regionName = region === 'gdl' ? 'Guadalajara' : 'Monterrey';
+  const vacancyAlt = v => {
+    const fecha = v.fecha ? ` publicada el ${v.fecha}` : '';
+    return `Vacante en ${regionName}${fecha}`;
+  };
   const waHref = telefono => {
     let digits = String(telefono || '').replace(/\D/g, '');
     if (digits.length === 10) digits = `52${digits}`;
@@ -47,7 +52,7 @@ function renderVacantes(region) {
         `</a>`
       : '';
     return `<div class="vacante-item">` +
-      `<img src="${esc(v.url)}" alt="Vacante" loading="lazy"${rot} ` +
+      `<img src="${esc(v.url)}" alt="${esc(vacancyAlt(v))}" loading="lazy"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
       contact +
     `</div>`;
@@ -102,7 +107,10 @@ app.use((req, res, next) => {
 app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio'));
 app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio'));
 
-app.use('/admin', express.static(ADMIN_DIR));
+app.use('/admin', (req, res, next) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow');
+  next();
+}, express.static(ADMIN_DIR));
 app.use(express.static(PAGES_DIR));
 
 // Routes
@@ -112,6 +120,7 @@ app.use('/soloempleos/mty', require('./routes/portada')('mty'));
 app.use('/soloempleos/gdl', require('./routes/vacantes')('gdl'));
 app.use('/soloempleos/mty', require('./routes/vacantes')('mty'));
 app.use('/soloempleos/contacto', require('./routes/contacto'));
+app.use('/soloempleos', require('./routes/backup'));
 
 // Fallback 404 for unknown soloempleos routes
 app.use('/soloempleos', (req, res) => {

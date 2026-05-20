@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solo Empleos — Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>Solo Empleos - Admin</title>
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
@@ -20,7 +21,7 @@
           <input type="text" id="login-usuario" name="usuario" autocomplete="username" required>
         </div>
         <div class="form-group">
-          <label for="login-password">Contraseña</label>
+          <label for="login-password">Contrasena</label>
           <input type="password" id="login-password" name="password" autocomplete="current-password" required>
         </div>
         <button type="submit" id="btn-login">ENTRAR</button>
@@ -32,19 +33,23 @@
   <!-- Admin panel -->
   <div id="admin-panel" class="admin-panel" style="display:none">
     <header class="admin-header">
-      <div class="admin-header-logo">SOLO EMPLEOS — Admin</div>
+      <div class="admin-header-logo">SOLO EMPLEOS - Admin</div>
       <div class="admin-region-selector">
         <button class="region-btn active" data-region="gdl">GDL</button>
         <button class="region-btn" data-region="mty">MTY</button>
       </div>
-      <button id="btn-logout" class="btn-logout">Cerrar sesión</button>
+      <button id="btn-backup" class="btn-backup" type="button">Descargar backup</button>
+      <label class="btn-restore" for="input-backup">Restaurar backup</label>
+      <input type="file" id="input-backup" accept=".zip,application/zip" style="display:none">
+      <button id="btn-logout" class="btn-logout">Cerrar sesion</button>
+      <div id="backup-status" class="backup-status" aria-live="polite"></div>
     </header>
 
     <main class="admin-main">
 
-      <!-- Portada del día -->
+      <!-- Portada del dia -->
       <section class="admin-card" id="section-portada">
-        <h2>Portada del día</h2>
+        <h2>Portada del dia</h2>
         <div class="portada-preview-wrap">
           <img id="portada-preview" src="" alt="Portada actual" class="portada-img">
           <div id="portada-placeholder" class="portada-placeholder">Sin portada</div>
@@ -64,7 +69,7 @@
           <input type="file" id="input-vacantes" accept="image/*" multiple style="display:none">
         </label>
         <label class="upload-btn upload-btn-replace" for="input-vacantes-carpeta">
-          ↻ Reemplazar todo (carpeta)
+          Reemplazar todo (carpeta)
           <input type="file" id="input-vacantes-carpeta" accept="image/*" webkitdirectory style="display:none">
         </label>
         <div id="vacantes-status" class="upload-status"></div>

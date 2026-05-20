@@ -146,6 +146,82 @@
       .replace(/>/g, '&gt;');
   }
 
+  function getFilenameFromDisposition(disposition) {
+    const match = /filename="?([^"]+)"?/i.exec(disposition || '');
+    return match ? match[1] : '';
+  }
+
+  function setBackupStatus(type, msg) {
+    const el = document.getElementById('backup-status');
+    if (!el) return;
+    el.className = `backup-status ${type || ''}`;
+    el.textContent = msg || '';
+  }
+
+  async function downloadBackup() {
+    const btn = document.getElementById('btn-backup');
+    btn.disabled = true;
+    btn.textContent = 'Preparando...';
+    setBackupStatus('', 'Generando ZIP con JSON e imagenes...');
+
+    try {
+      const res = await apiRequest('/soloempleos/backup');
+      if (!res) return;
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'No se pudo generar el backup');
+      }
+
+      const blob = await res.blob();
+      const filename = getFilenameFromDisposition(res.headers.get('Content-Disposition')) ||
+        `soloempleos-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setBackupStatus('ok', 'Backup descargado.');
+    } catch (err) {
+      setBackupStatus('error', err.message || 'Error al descargar backup');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Descargar backup';
+    }
+  }
+
+  async function restoreBackup(file) {
+    if (!file) return;
+    if (!await UI.confirm('Restaurar este backup reemplazara los JSON e imagenes actuales. Continuar?')) return;
+
+    const input = document.getElementById('input-backup');
+    const btn = document.querySelector('.btn-restore');
+    btn.classList.add('is-disabled');
+    setBackupStatus('', 'Subiendo y restaurando backup...');
+
+    try {
+      const fd = new FormData();
+      fd.append('backup', file);
+      const res = await apiRequest('/soloempleos/backup/restore', { method: 'POST', body: fd });
+      if (!res) return;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'No se pudo restaurar el backup');
+      }
+
+      setBackupStatus('ok', `Backup restaurado: ${data.files} archivo(s).`);
+      await loadPortada();
+      await loadVacantes();
+    } catch (err) {
+      setBackupStatus('error', err.message || 'Error al restaurar backup');
+    } finally {
+      btn.classList.remove('is-disabled');
+      input.value = '';
+    }
+  }
+
   // ──────────────────────────
   // Portada
   // ──────────────────────────
@@ -549,6 +625,12 @@
     document.getElementById('btn-logout').addEventListener('click', () => {
       Auth.logout();
       UI.showLogin();
+    });
+
+    // Backup
+    document.getElementById('btn-backup').addEventListener('click', downloadBackup);
+    document.getElementById('input-backup').addEventListener('change', (e) => {
+      restoreBackup(e.target.files[0]);
     });
 
     // Region selector
