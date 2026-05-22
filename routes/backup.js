@@ -5,10 +5,9 @@ const { ZipArchive } = require('archiver');
 const multer = require('multer');
 const unzipper = require('unzipper');
 const requireAuth = require('../middleware/auth');
+const { CONTENT_DIR, REGIONS, contentPath } = require('../content-paths');
 
 const router = express.Router();
-const PAGES_DIR = path.join(__dirname, '..', 'pages');
-const REGIONS = ['gdl', 'mty'];
 const RESTORE_ROOTS = new Set(['gdl/data', 'gdl/uploads', 'mty/data', 'mty/uploads']);
 
 const upload = multer({
@@ -27,9 +26,23 @@ function addIfExists(archive, sourcePath, zipPath) {
   if (!fs.existsSync(sourcePath)) return;
   const stat = fs.statSync(sourcePath);
   if (stat.isDirectory()) {
-    archive.directory(sourcePath, zipPath);
+    addDirectory(archive, sourcePath, zipPath);
   } else {
     archive.file(sourcePath, { name: zipPath });
+  }
+}
+
+function addDirectory(archive, sourcePath, zipPath) {
+  for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+    if (entry.name === '.cache') continue;
+
+    const sourceEntry = path.join(sourcePath, entry.name);
+    const zipEntry = `${zipPath}/${entry.name}`;
+    if (entry.isDirectory()) {
+      addDirectory(archive, sourceEntry, zipEntry);
+    } else if (entry.isFile()) {
+      archive.file(sourceEntry, { name: zipEntry });
+    }
   }
 }
 
@@ -52,9 +65,9 @@ function getRestoreRoot(zipPath) {
 function resolveSafeTarget(zipPath) {
   const root = getRestoreRoot(zipPath);
   if (!root) return null;
-  const target = path.resolve(PAGES_DIR, zipPath);
-  const pagesRoot = path.resolve(PAGES_DIR);
-  if (target !== pagesRoot && !target.startsWith(`${pagesRoot}${path.sep}`)) {
+  const target = path.resolve(CONTENT_DIR, zipPath);
+  const contentRoot = path.resolve(CONTENT_DIR);
+  if (target !== contentRoot && !target.startsWith(`${contentRoot}${path.sep}`)) {
     throw new Error('ZIP contiene rutas no permitidas');
   }
   return target;
@@ -90,10 +103,10 @@ function validateEntries(entries) {
 }
 
 function clearRestoreRoots(roots) {
-  const pagesRoot = path.resolve(PAGES_DIR);
+  const contentRoot = path.resolve(CONTENT_DIR);
   for (const root of roots) {
-    const target = path.resolve(PAGES_DIR, root);
-    if (!target.startsWith(`${pagesRoot}${path.sep}`)) throw new Error('Destino no permitido');
+    const target = path.resolve(CONTENT_DIR, root);
+    if (!target.startsWith(`${contentRoot}${path.sep}`)) throw new Error('Destino no permitido');
     fs.rmSync(target, { recursive: true, force: true });
     fs.mkdirSync(target, { recursive: true });
   }
@@ -110,7 +123,7 @@ router.get('/backup', requireAuth, (req, res) => {
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 0 } });
 
   archive.on('error', err => {
     console.error('backup archive error:', err);
@@ -124,8 +137,8 @@ router.get('/backup', requireAuth, (req, res) => {
   archive.pipe(res);
 
   for (const region of REGIONS) {
-    addIfExists(archive, path.join(PAGES_DIR, region, 'data'), `${region}/data`);
-    addIfExists(archive, path.join(PAGES_DIR, region, 'uploads'), `${region}/uploads`);
+    addIfExists(archive, contentPath(region, 'data'), `${region}/data`);
+    addIfExists(archive, contentPath(region, 'uploads'), `${region}/uploads`);
   }
 
   archive.append(

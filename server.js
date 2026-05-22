@@ -3,14 +3,13 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const { ADMIN_DIR, PAGES_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const PAGES_DIR = path.join(__dirname, 'pages');
-const ADMIN_DIR = path.join(__dirname, 'admin');
 const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
 const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
 
@@ -25,7 +24,7 @@ function injectFragments(html) {
 }
 
 function renderVacantes(region) {
-  const file = path.join(PAGES_DIR, region, 'data', 'vacantes.json');
+  const file = dataPath(region, 'vacantes.json');
   let data;
   try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
   if (!Array.isArray(data) || data.length === 0) {
@@ -46,13 +45,14 @@ function renderVacantes(region) {
   const items = data.map(v => {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const whatsappUrl = waHref(v.telefono);
+    const thumbUrl = `/media/${region}/vacantes/${encodeURIComponent(path.basename(v.url))}?w=720&q=72`;
     const contact = whatsappUrl
       ? `<a class="vacante-whatsapp" href="${esc(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">` +
           `<img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">` +
         `</a>`
       : '';
     return `<div class="vacante-item">` +
-      `<img src="${esc(v.url)}" alt="${esc(vacancyAlt(v))}" loading="lazy"${rot} ` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(v.url)}" alt="${esc(vacancyAlt(v))}" loading="lazy" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
       contact +
     `</div>`;
@@ -69,11 +69,12 @@ function injectVacantes(html, region) {
 }
 
 function renderPortadaUrl(region) {
-  const file = path.join(PAGES_DIR, region, 'data', 'portada.json');
+  const file = dataPath(region, 'portada.json');
   try {
     const { url, version } = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (!url) return '/shared/img/placeholder.svg';
-    return `${url}?v=${version || Date.now()}`;
+    const filename = encodeURIComponent(path.basename(url));
+    return `/media/${region}/portadas/${filename}?w=720&q=76&v=${version || Date.now()}`;
   } catch (_) {
     return '/shared/img/placeholder.svg';
   }
@@ -111,6 +112,12 @@ app.use('/admin', (req, res, next) => {
   res.set('X-Robots-Tag', 'noindex, nofollow');
   next();
 }, express.static(ADMIN_DIR));
+for (const region of REGIONS) {
+  app.use(`/${region}/data`, express.static(path.dirname(dataPath(region, 'placeholder.json'))));
+  app.use(`/${region}/uploads/vacantes`, express.static(uploadsPath(region, 'vacantes')));
+  app.use(`/${region}/uploads/portadas`, express.static(uploadsPath(region, 'portadas')));
+}
+app.use(require('./routes/media'));
 app.use(express.static(PAGES_DIR));
 
 // Routes

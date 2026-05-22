@@ -16,9 +16,10 @@
       if (!data.url) throw new Error('no url');
       const img = document.getElementById(imgId);
       if (!img) return;
+      const filename = String(data.url).split('/').pop();
       img.onload = () => {};
       img.onerror = () => showPlaceholder(imgId, phId);
-      img.src = `${data.url}?v=${data.version || Date.now()}`;
+      img.src = `/media/${region}/portadas/${encodeURIComponent(filename)}?w=720&q=76&v=${data.version || Date.now()}`;
     } catch (_) {
       showPlaceholder(imgId, phId);
     }

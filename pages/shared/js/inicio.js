@@ -47,9 +47,11 @@
       const items = data.map(v => `
         <div class="vacante-item">
           <img
-            src="${escapeAttr(v.url)}"
+            src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=720&q=72"
+            data-full-src="${escapeAttr(v.url)}"
             alt="Vacante"
             loading="lazy"
+            decoding="async"
             onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'"
           >
           ${whatsappButton(v.telefono)}
@@ -107,7 +109,7 @@
       if (!img) return;
       const item = img.closest('.vacante-item');
       const whatsapp = item ? item.querySelector('.vacante-whatsapp') : null;
-      open(img.currentSrc || img.src, whatsapp ? whatsapp.href : '');
+      open(img.dataset.fullSrc || img.currentSrc || img.src, whatsapp ? whatsapp.href : '');
     });
 
     modal.addEventListener('click', (e) => {

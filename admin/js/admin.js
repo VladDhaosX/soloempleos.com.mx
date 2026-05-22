@@ -158,6 +158,12 @@
     el.textContent = msg || '';
   }
 
+  function mediaUrl(region, type, url, params = '') {
+    const filename = String(url || '').split('/').pop();
+    if (!filename) return '';
+    return `/media/${region}/${type}/${encodeURIComponent(filename)}${params}`;
+  }
+
   async function downloadBackup() {
     const btn = document.getElementById('btn-backup');
     btn.disabled = true;
@@ -232,7 +238,7 @@
       const data = await res.json();
       const img = document.getElementById('portada-preview');
       const ph = document.getElementById('portada-placeholder');
-      img.src = `${data.url}?v=${data.version}`;
+      img.src = mediaUrl(state.region, 'portadas', data.url, `?w=720&q=76&v=${data.version || Date.now()}`);
       img.style.display = 'block';
       img.onerror = () => {
         img.style.display = 'none';
@@ -289,7 +295,7 @@
       const telefono = v.telefono || '';
       return `
       <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}" data-telefono="${escapeAttr(telefono)}">
-        <img src="${v.url}" alt="Vacante" loading="lazy"
+        <img src="${mediaUrl(state.region, 'vacantes', v.url, '?w=480&q=70')}" alt="Vacante" loading="lazy"
              style="transform:rotate(${rot}deg)"
              onerror="this.onerror=null;this.style.opacity='.3'">
         <div class="vacante-menu">
