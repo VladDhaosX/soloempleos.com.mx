@@ -105,8 +105,29 @@ app.use((req, res, next) => {
   });
 });
 
-app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio'));
-app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio'));
+app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio/'));
+app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio/'));
+
+const legacyRedirects = [
+  [/^\/gdl\/home-2\/?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/inicio-2\/?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/empleospost(?:\/.*)?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/mas-ediciones\/?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/trabajos-y-derechos\/?$/i, '/gdl/inicio/'],
+  [/^\/mty\/home-2\/?$/i, '/mty/inicio/'],
+  [/^\/mty\/inicio-2\/?$/i, '/mty/inicio/'],
+  [/^\/mty\/empleospost(?:\/.*)?$/i, '/mty/inicio/'],
+  [/^\/mty\/mas-ediciones\/?$/i, '/mty/inicio/'],
+  [/^\/mty\/trabajos-y-derechos\/?$/i, '/mty/inicio/'],
+  [/^\/mty\/wp-content(?:\/.*)?$/i, '/mty/inicio/'],
+  [/^\/gdl\/wp-content(?:\/.*)?$/i, '/gdl/inicio/'],
+];
+
+app.use((req, res, next) => {
+  const match = legacyRedirects.find(([pattern]) => pattern.test(req.path));
+  if (!match) return next();
+  res.redirect(301, match[1]);
+});
 
 app.use('/admin', (req, res, next) => {
   res.set('X-Robots-Tag', 'noindex, nofollow');
