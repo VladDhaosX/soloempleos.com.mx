@@ -10,6 +10,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  if (req.hostname === 'www.soloempleos.com.mx') {
+    return res.redirect(301, `https://soloempleos.com.mx${req.originalUrl}`);
+  }
+  next();
+});
+
 const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
 const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
 
