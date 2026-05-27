@@ -27,6 +27,7 @@
     const region = document.body.dataset.region || 'gdl';
     const grid = document.getElementById('vacantes-grid');
     if (!grid) return;
+    const regionName = region === 'mty' ? 'Monterrey' : 'Guadalajara';
 
     if (grid.dataset.ssr === 'vacantes' && grid.querySelector('.vacante-item')) {
       requestAnimationFrame(() => grid.classList.add('is-ready'));
@@ -49,7 +50,7 @@
           <img
             src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=720&q=72"
             data-full-src="${escapeAttr(v.url)}"
-            alt="Vacante"
+            alt="${escapeAttr(v.fecha ? `Vacante en ${regionName} publicada el ${v.fecha}` : `Vacante en ${regionName}`)}"
             loading="lazy"
             decoding="async"
             onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'"
