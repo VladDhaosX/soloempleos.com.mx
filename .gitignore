@@ -15,5 +15,14 @@ playwright-recordings/
 .seo-audit/
 evidencia-cliente-fase-1/
 storage/
+soloempleos.com.mx-Coverage*/
+transfer-whatsapp-vacantes/
+.env.example
+CONTENT_DEPLOYMENT.md
 Plan_De_Trabajo_SEO.docx
-Reporte_Fase_1_SEO.md
+Reporte_*.docx
+Reporte_*.md
+tools/
+pages/img/
+pages/js/
+pages/shared/img/*.mov
