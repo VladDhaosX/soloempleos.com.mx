@@ -48,8 +48,8 @@
       const items = data.map(v => `
         <div class="vacante-item">
           <img
-            src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=720&q=72"
-            data-full-src="${escapeAttr(v.url)}"
+            src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=640&q=68"
+            data-full-src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=1200&q=82"
             alt="${escapeAttr(v.fecha ? `Vacante en ${regionName} publicada el ${v.fecha}` : `Vacante en ${regionName}`)}"
             loading="lazy"
             decoding="async"

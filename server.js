@@ -52,14 +52,16 @@ function renderVacantes(region) {
   const items = data.map(v => {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const whatsappUrl = waHref(v.telefono);
-    const thumbUrl = `/media/${region}/vacantes/${encodeURIComponent(path.basename(v.url))}?w=720&q=72`;
+    const filename = encodeURIComponent(path.basename(v.url));
+    const thumbUrl = `/media/${region}/vacantes/${filename}?w=640&q=68`;
+    const fullUrl = `/media/${region}/vacantes/${filename}?w=1200&q=82`;
     const contact = whatsappUrl
       ? `<a class="vacante-whatsapp" href="${esc(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">` +
           `<img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">` +
         `</a>`
       : '';
     return `<div class="vacante-item">` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(v.url)}" alt="${esc(vacancyAlt(v))}" loading="lazy" decoding="async"${rot} ` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}" loading="lazy" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
       contact +
     `</div>`;
