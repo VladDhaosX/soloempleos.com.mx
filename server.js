@@ -49,6 +49,74 @@ function setDataHeaders(res) {
   res.setHeader('Cache-Control', 'no-cache');
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function newestDate(paths) {
+  const times = paths
+    .map(p => {
+      try {
+        return fs.statSync(p).mtimeMs;
+      } catch (_) {
+        return 0;
+      }
+    })
+    .filter(Boolean);
+
+  const newest = times.length ? Math.max(...times) : Date.now();
+  return new Date(newest).toISOString().slice(0, 10);
+}
+
+function sitemapEntry(loc, priority, paths) {
+  return `  <url>
+    <loc>${escapeXml(loc)}</loc>
+    <lastmod>${newestDate(paths)}</lastmod>
+    <priority>${priority}</priority>
+  </url>`;
+}
+
+function renderSitemapXml() {
+  const entries = [
+    sitemapEntry('https://soloempleos.com.mx/', '1.0', [
+      path.join(PAGES_DIR, 'index.html'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/gdl/inicio/', '0.9', [
+      path.join(PAGES_DIR, 'gdl', 'inicio', 'index.html'),
+      dataPath('gdl', 'vacantes.json'),
+      dataPath('gdl', 'portada.json'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/mty/inicio/', '0.9', [
+      path.join(PAGES_DIR, 'mty', 'inicio', 'index.html'),
+      dataPath('mty', 'vacantes.json'),
+      dataPath('mty', 'portada.json'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7', [
+      path.join(PAGES_DIR, 'gdl', 'guia-empleo', 'index.html'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/mty/guia-empleo/', '0.7', [
+      path.join(PAGES_DIR, 'mty', 'guia-empleo', 'index.html'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/gdl/contacto/', '0.6', [
+      path.join(PAGES_DIR, 'gdl', 'contacto', 'index.html'),
+    ]),
+    sitemapEntry('https://soloempleos.com.mx/mty/contacto/', '0.6', [
+      path.join(PAGES_DIR, 'mty', 'contacto', 'index.html'),
+    ]),
+  ];
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries.join('\n')}
+</urlset>
+`;
+}
+
 function injectFragments(html) {
   return html
     .replace('<div id="header-placeholder"></div>', readFragment(HEADER_FRAGMENT))
@@ -67,7 +135,7 @@ function renderVacantes(region) {
   const regionName = region === 'gdl' ? 'Guadalajara' : 'Monterrey';
   const vacancyAlt = v => {
     const fecha = v.fecha ? ` publicada el ${v.fecha}` : '';
-    return `Vacante en ${regionName}${fecha}`;
+    return `Vacante de empleo en ${regionName}${fecha} en Solo Empleos`;
   };
   const waHref = telefono => {
     let digits = String(telefono || '').replace(/\D/g, '');
@@ -142,6 +210,12 @@ app.use((req, res, next) => {
 
 app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio/'));
 app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio/'));
+
+app.get('/sitemap.xml', (req, res) => {
+  res.set('Content-Type', 'application/xml; charset=utf-8');
+  res.set('Cache-Control', 'public, max-age=300');
+  res.send(renderSitemapXml());
+});
 
 const legacyRedirects = [
   [/^\/(?:index\.php)?$/i, '/'],
