@@ -2,12 +2,14 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const fs = require('fs');
 const { ADMIN_DIR, PAGES_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
 
 const app = express();
 
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -22,6 +24,29 @@ const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
 
 function readFragment(p) {
   try { return fs.readFileSync(p, 'utf8'); } catch (_) { return ''; }
+}
+
+function setPageAssetHeaders(res, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.xml' || ext === '.txt') {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return;
+  }
+  if (ext === '.css' || ext === '.js' || ext === '.svg' || ext === '.ico') {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return;
+  }
+  if (['.jpg', '.jpeg', '.png', '.webp', '.mp4'].includes(ext)) {
+    res.setHeader('Cache-Control', 'public, max-age=604800');
+  }
+}
+
+function setUploadHeaders(res) {
+  res.setHeader('Cache-Control', 'public, max-age=604800');
+}
+
+function setDataHeaders(res) {
+  res.setHeader('Cache-Control', 'no-cache');
 }
 
 function injectFragments(html) {
@@ -110,6 +135,7 @@ app.use((req, res, next) => {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
     res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Cache-Control', 'no-cache');
     res.send(injectPortadas(injectVacantes(injectFragments(html), region)));
   });
 });
@@ -160,12 +186,12 @@ app.use('/admin', (req, res, next) => {
   next();
 }, express.static(ADMIN_DIR));
 for (const region of REGIONS) {
-  app.use(`/${region}/data`, express.static(path.dirname(dataPath(region, 'placeholder.json'))));
-  app.use(`/${region}/uploads/vacantes`, express.static(uploadsPath(region, 'vacantes')));
-  app.use(`/${region}/uploads/portadas`, express.static(uploadsPath(region, 'portadas')));
+  app.use(`/${region}/data`, express.static(path.dirname(dataPath(region, 'placeholder.json')), { setHeaders: setDataHeaders }));
+  app.use(`/${region}/uploads/vacantes`, express.static(uploadsPath(region, 'vacantes'), { setHeaders: setUploadHeaders }));
+  app.use(`/${region}/uploads/portadas`, express.static(uploadsPath(region, 'portadas'), { setHeaders: setUploadHeaders }));
 }
 app.use(require('./routes/media'));
-app.use(express.static(PAGES_DIR));
+app.use(express.static(PAGES_DIR, { setHeaders: setPageAssetHeaders }));
 
 // Routes
 app.use('/soloempleos/auth', require('./routes/auth'));
