@@ -51,6 +51,8 @@
             src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=640&q=68"
             data-full-src="/media/${region}/vacantes/${escapeAttr(String(v.url || '').split('/').pop())}?w=1200&q=82"
             alt="${escapeAttr(v.fecha ? `Vacante de empleo en ${regionName} publicada el ${v.fecha} en Solo Empleos` : `Vacante de empleo en ${regionName} en Solo Empleos`)}"
+            width="3366"
+            height="4134"
             loading="lazy"
             decoding="async"
             onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'"

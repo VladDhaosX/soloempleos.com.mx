@@ -73,6 +73,55 @@ function newestDate(paths) {
   return new Date(newest).toISOString().slice(0, 10);
 }
 
+function readImageDimensions(filePath) {
+  try {
+    const stat = fs.statSync(filePath);
+    const fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(Math.min(stat.size, 64 * 1024));
+    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    fs.closeSync(fd);
+    const data = buffer.subarray(0, bytesRead);
+
+    if (data.length >= 24 && data.toString('ascii', 1, 4) === 'PNG') {
+      return {
+        width: data.readUInt32BE(16),
+        height: data.readUInt32BE(20),
+      };
+    }
+
+    if (data.length >= 4 && data[0] === 0xff && data[1] === 0xd8) {
+      let offset = 2;
+      while (offset + 9 < data.length) {
+        if (data[offset] !== 0xff) break;
+        const marker = data[offset + 1];
+        const length = data.readUInt16BE(offset + 2);
+        if (length < 2) break;
+        if (
+          marker >= 0xc0 &&
+          marker <= 0xcf &&
+          ![0xc4, 0xc8, 0xcc].includes(marker)
+        ) {
+          return {
+            width: data.readUInt16BE(offset + 7),
+            height: data.readUInt16BE(offset + 5),
+          };
+        }
+        offset += 2 + length;
+      }
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+function imageDimensionAttrs(filePath) {
+  const dimensions = readImageDimensions(filePath);
+  return dimensions
+    ? ` width="${dimensions.width}" height="${dimensions.height}"`
+    : '';
+}
+
 function sitemapEntry(loc, priority, paths) {
   return `  <url>
     <loc>${escapeXml(loc)}</loc>
@@ -146,6 +195,7 @@ function renderVacantes(region) {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const whatsappUrl = waHref(v.telefono);
     const filename = encodeURIComponent(path.basename(v.url));
+    const sourcePath = uploadsPath(region, 'vacantes', path.basename(v.url));
     const thumbUrl = `/media/${region}/vacantes/${filename}?w=640&q=68`;
     const fullUrl = `/media/${region}/vacantes/${filename}?w=1200&q=82`;
     const contact = whatsappUrl
@@ -154,7 +204,7 @@ function renderVacantes(region) {
         `</a>`
       : '';
     return `<div class="vacante-item">` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}" loading="lazy" decoding="async"${rot} ` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}"${imageDimensionAttrs(sourcePath)} loading="lazy" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
       contact +
     `</div>`;
@@ -170,23 +220,37 @@ function injectVacantes(html, region) {
   return html.replace('<!-- SSR:VACANTES -->', renderVacantes(region));
 }
 
-function renderPortadaUrl(region) {
+function renderPortada(region) {
   const file = dataPath(region, 'portada.json');
   try {
     const { url, version } = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!url) return '/shared/img/placeholder.svg';
-    const filename = encodeURIComponent(path.basename(url));
-    return `/media/${region}/portadas/${filename}?w=720&q=76&v=${version || Date.now()}`;
+    if (!url) {
+      return { url: '/shared/img/placeholder.svg', width: '400', height: '300' };
+    }
+    const rawFilename = path.basename(url);
+    const sourcePath = uploadsPath(region, 'portadas', rawFilename);
+    const dimensions = readImageDimensions(sourcePath);
+    return {
+      url: `/media/${region}/portadas/${encodeURIComponent(rawFilename)}?w=720&q=76&v=${version || Date.now()}`,
+      width: String(dimensions ? dimensions.width : 720),
+      height: String(dimensions ? dimensions.height : 900),
+    };
   } catch (_) {
-    return '/shared/img/placeholder.svg';
+    return { url: '/shared/img/placeholder.svg', width: '400', height: '300' };
   }
 }
 
 function injectPortadas(html) {
   if (!html.includes('__SSR_PORTADA_')) return html;
+  const gdl = renderPortada('gdl');
+  const mty = renderPortada('mty');
   return html
-    .replace('__SSR_PORTADA_GDL__', renderPortadaUrl('gdl'))
-    .replace('__SSR_PORTADA_MTY__', renderPortadaUrl('mty'));
+    .replace('__SSR_PORTADA_GDL__', gdl.url)
+    .replace('__SSR_PORTADA_GDL_WIDTH__', gdl.width)
+    .replace('__SSR_PORTADA_GDL_HEIGHT__', gdl.height)
+    .replace('__SSR_PORTADA_MTY__', mty.url)
+    .replace('__SSR_PORTADA_MTY_WIDTH__', mty.width)
+    .replace('__SSR_PORTADA_MTY_HEIGHT__', mty.height);
 }
 
 app.use((req, res, next) => {

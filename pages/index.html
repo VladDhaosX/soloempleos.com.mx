@@ -51,7 +51,7 @@
   <main class="landing-wrapper">
     <h1 class="sr-only">Empleos en Guadalajara y Monterrey</h1>
     <div class="landing-logo">
-      <img src="/shared/img/logo-gdl.jpg" alt="Solo Empleos">
+      <img src="/shared/img/logo-gdl.jpg" alt="Solo Empleos" width="1200" height="142" decoding="async">
     </div>
 
     <div class="landing-cities">
@@ -59,6 +59,8 @@
         <h2 class="city-title">GUADALAJARA</h2>
         <div class="city-cover">
           <img id="portada-gdl" src="__SSR_PORTADA_GDL__" alt="Portada Guadalajara"
+               width="__SSR_PORTADA_GDL_WIDTH__" height="__SSR_PORTADA_GDL_HEIGHT__"
+               fetchpriority="high" decoding="async"
                onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">
         </div>
       </a>
@@ -67,6 +69,8 @@
         <h2 class="city-title">MONTERREY</h2>
         <div class="city-cover">
           <img id="portada-mty" src="__SSR_PORTADA_MTY__" alt="Portada Monterrey"
+               width="__SSR_PORTADA_MTY_WIDTH__" height="__SSR_PORTADA_MTY_HEIGHT__"
+               decoding="async"
                onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">
         </div>
       </a>
