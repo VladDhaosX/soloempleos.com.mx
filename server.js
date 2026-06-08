@@ -16,6 +16,9 @@ app.use((req, res, next) => {
   if (req.hostname === 'www.soloempleos.com.mx') {
     return res.redirect(301, `https://soloempleos.com.mx${req.originalUrl}`);
   }
+  if (Object.prototype.hasOwnProperty.call(req.query, 'custom-css')) {
+    return res.redirect(301, req.path || '/');
+  }
   next();
 });
 
