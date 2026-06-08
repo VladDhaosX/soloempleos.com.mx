@@ -312,8 +312,10 @@ const legacyRedirects = [
   [/^\/mty\/trabajos-y-derechos(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-admin(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-[^/]+\.php$/i, '/mty/inicio/'],
+  [/^\/mty\/wp-includes(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-content(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/gdl\/wp-content(?:\/.*)?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/wp-includes(?:\/.*)?$/i, '/gdl/inicio/'],
 ];
 
 app.use((req, res, next) => {
