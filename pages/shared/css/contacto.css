@@ -1,10 +1,83 @@
 .contacto-section {
   padding: 3rem 1rem 4rem;
   min-height: calc(100vh - 200px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   background: #f1f1f1;
+}
+
+.contacto-layout {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 560px);
+  gap: 2rem;
+  align-items: start;
+}
+
+.contacto-copy {
+  padding: 1rem 0;
+  color: #1a1a1a;
+}
+
+.contacto-kicker {
+  margin: 0 0 0.75rem;
+  color: #5b5b5b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contacto-copy h1 {
+  margin: 0 0 1rem;
+  max-width: 620px;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.contacto-copy p {
+  max-width: 620px;
+  margin: 0 0 1.25rem;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.contacto-details {
+  max-width: 620px;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+  color: #2d2d2d;
+  line-height: 1.5;
+}
+
+.contacto-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.contacto-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  color: #1a1a1a;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.contacto-links a:hover {
+  background: #1a1a1a;
+  color: #fff;
 }
 
 .contacto-container {
@@ -149,5 +222,15 @@
 @media (max-width: 600px) {
   #contacto-form {
     padding: 1.75rem 1.5rem 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .contacto-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .contacto-container {
+    max-width: none;
   }
 }

@@ -169,10 +169,47 @@ ${entries.join('\n')}
 `;
 }
 
-function injectFragments(html) {
+function adjustFragmentForRegion(fragment, region) {
+  if (!region) return fragment;
+
+  return fragment
+    .replace(/<a\b[^>]*>/g, tag => {
+      let updated = tag;
+      const regionHref = updated.match(/data-region-href="([^"]*)"/);
+      if (regionHref) {
+        const adjusted = regionHref[1].replace(/\/(gdl|mty)\//g, `/${region}/`);
+        updated = updated.includes(' href=')
+          ? updated.replace(/href="[^"]*"/, `href="${adjusted}"`)
+          : updated.replace('<a ', `<a href="${adjusted}" `);
+      }
+
+      if (updated.includes('data-region-ofertas=')) {
+        updated = updated.replace(/href="[^"]*"/, `href="https://soloofertas.com/${region}/"`);
+        updated = updated.replace(/data-region-ofertas="(?:gdl|mty)"/, `data-region-ofertas="${region}"`);
+      }
+
+      const regionLink = updated.match(/data-region-link="([^"]*)"/);
+      if (regionLink) {
+        updated = updated.replace(/\sclass="active"/, '');
+        if (regionLink[1] === region) {
+          updated = updated.includes(' class=')
+            ? updated.replace(/class="([^"]*)"/, (_, classes) => `class="${classes} active"`)
+            : updated.replace('<a ', '<a class="active" ');
+        }
+      }
+
+      return updated;
+    })
+    .replace(/src="\/shared\/img\/logo-(?:gdl|mty)\.jpg"/g, `src="/shared/img/logo-${region}.jpg"`);
+}
+
+function injectFragments(html, region) {
+  const header = adjustFragmentForRegion(readFragment(HEADER_FRAGMENT), region);
+  const footer = adjustFragmentForRegion(readFragment(FOOTER_FRAGMENT), region);
+
   return html
-    .replace('<div id="header-placeholder"></div>', readFragment(HEADER_FRAGMENT))
-    .replace('<div id="footer-placeholder"></div>', readFragment(FOOTER_FRAGMENT));
+    .replace('<div id="header-placeholder"></div>', header)
+    .replace('<div id="footer-placeholder"></div>', footer);
 }
 
 function renderVacantes(region) {
@@ -271,7 +308,7 @@ app.use((req, res, next) => {
     if (err) return next();
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');
-    res.send(injectPortadas(injectVacantes(injectFragments(html), region)));
+    res.send(injectPortadas(injectVacantes(injectFragments(html, region), region)));
   });
 });
 

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Contacta a Solo Empleos Monterrey para publicidad, vacantes y atención a empresas o candidatos.">
+  <meta name="description" content="Contacta a Solo Empleos Monterrey para publicar vacantes, solicitar publicidad local o recibir atencion para empresas y candidatos en Nuevo Leon.">
   <link rel="canonical" href="https://soloempleos.com.mx/mty/contacto/">
   <meta property="og:locale" content="es_MX">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Solo Empleos">
   <meta property="og:title" content="Contacto Monterrey | Solo Empleos">
-  <meta property="og:description" content="Contacta a Solo Empleos Monterrey para publicidad, vacantes y atenci&oacute;n a empresas o candidatos.">
+  <meta property="og:description" content="Contacto de Solo Empleos Monterrey para publicar vacantes, solicitar publicidad local y recibir atencion en Nuevo Leon.">
   <meta property="og:url" content="https://soloempleos.com.mx/mty/contacto/">
   <meta property="og:image" content="https://soloempleos.com.mx/shared/img/og-mty.jpg">
   <meta property="og:image:width" content="1200">
@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Solo Empleos Monterrey, contacto">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Contacto Monterrey | Solo Empleos">
-  <meta name="twitter:description" content="Contacta a Solo Empleos Monterrey para publicidad, vacantes y atenci&oacute;n a empresas o candidatos.">
+  <meta name="twitter:description" content="Contacto de Solo Empleos Monterrey para publicar vacantes, solicitar publicidad local y recibir atencion en Nuevo Leon.">
   <meta name="twitter:image" content="https://soloempleos.com.mx/shared/img/og-mty.jpg">
   <meta name="twitter:image:alt" content="Solo Empleos Monterrey, contacto">
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -33,7 +33,26 @@
     "@id": "https://soloempleos.com.mx/mty/contacto/#contact",
     "name": "Contacto Solo Empleos Monterrey",
     "url": "https://soloempleos.com.mx/mty/contacto/",
-    "description": "Pagina de contacto de Solo Empleos Monterrey para publicidad, vacantes y atencion a empresas o candidatos.",
+    "description": "Pagina de contacto de Solo Empleos Monterrey para publicacion de vacantes, publicidad local y atencion a empresas o candidatos en Nuevo Leon.",
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": "Monterrey, Nuevo Leon"
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Diego de Montemayor #104",
+      "addressLocality": "Monterrey",
+      "addressRegion": "Nuevo Leon",
+      "postalCode": "64000",
+      "addressCountry": "MX"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+52-333-447-7077",
+      "email": "marketing@soloofertas.com",
+      "contactType": "sales",
+      "areaServed": "Monterrey"
+    },
     "about": {
       "@id": "https://soloempleos.com.mx/mty/inicio/#business"
     }
@@ -46,44 +65,61 @@
 
   <main>
     <section class="contacto-section">
-      <div class="contacto-container">
-        <form id="contacto-form" novalidate>
-          <div class="contacto-eyebrow">PUBLICIDAD<span class="eyebrow-dot"></span></div>
-          <h1 class="contacto-title">Contáctanos en Monterrey</h1>
-
-          <div class="form-group">
-            <label for="nombre">Tu nombre</label>
-            <input type="text" id="nombre" name="nombre" required autocomplete="name">
-            <span class="field-error" id="error-nombre"></span>
+      <div class="contacto-layout">
+        <div class="contacto-copy">
+          <p class="contacto-kicker">Monterrey y zona metropolitana</p>
+          <h1>Contacto Solo Empleos Monterrey</h1>
+          <p>Escr&iacute;benos para publicar vacantes, consultar opciones de publicidad o pedir seguimiento sobre oportunidades laborales en Monterrey, San Nicol&aacute;s, Guadalupe, San Pedro, Apodaca y municipios cercanos.</p>
+          <ul class="contacto-details">
+            <li><strong>Oficina:</strong> Diego de Montemayor #104, Col. Centro, Monterrey, Nuevo Le&oacute;n.</li>
+            <li><strong>Tel&eacute;fono:</strong> 333 4477 077</li>
+            <li><strong>Correo:</strong> marketing@soloofertas.com</li>
+          </ul>
+          <div class="contacto-links" aria-label="Enlaces de Monterrey">
+            <a href="/mty/inicio/">Ver vacantes en Monterrey</a>
+            <a href="/mty/guia-empleo/">Gu&iacute;a de empleo Monterrey</a>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="email">Tu correo electrónico</label>
-            <input type="email" id="email" name="email" required autocomplete="email">
-            <span class="field-error" id="error-email"></span>
-          </div>
+        <div class="contacto-container">
+          <form id="contacto-form" novalidate>
+            <div class="contacto-eyebrow">PUBLICIDAD<span class="eyebrow-dot"></span></div>
+            <h2 class="contacto-title">Cont&aacute;ctanos en Monterrey</h2>
 
-          <div class="form-group">
-            <label for="telefono">Tu número de teléfono</label>
-            <input type="tel" id="telefono" name="telefono" required autocomplete="tel" inputmode="tel">
-            <span class="field-error" id="error-telefono"></span>
-          </div>
+            <div class="form-group">
+              <label for="nombre">Tu nombre</label>
+              <input type="text" id="nombre" name="nombre" required autocomplete="name">
+              <span class="field-error" id="error-nombre"></span>
+            </div>
 
-          <div class="form-group">
-            <label for="asunto">Asunto</label>
-            <input type="text" id="asunto" name="asunto" required>
-            <span class="field-error" id="error-asunto"></span>
-          </div>
+            <div class="form-group">
+              <label for="email">Tu correo electr&oacute;nico</label>
+              <input type="email" id="email" name="email" required autocomplete="email">
+              <span class="field-error" id="error-email"></span>
+            </div>
 
-          <div class="form-group">
-            <label for="mensaje">Tu mensaje (opcional)</label>
-            <textarea id="mensaje" name="mensaje" rows="8"></textarea>
-          </div>
+            <div class="form-group">
+              <label for="telefono">Tu n&uacute;mero de tel&eacute;fono</label>
+              <input type="tel" id="telefono" name="telefono" required autocomplete="tel" inputmode="tel">
+              <span class="field-error" id="error-telefono"></span>
+            </div>
 
-          <button type="submit" id="btn-enviar">ENVIAR</button>
+            <div class="form-group">
+              <label for="asunto">Asunto</label>
+              <input type="text" id="asunto" name="asunto" required>
+              <span class="field-error" id="error-asunto"></span>
+            </div>
 
-          <div id="form-feedback" aria-live="polite"></div>
-        </form>
+            <div class="form-group">
+              <label for="mensaje">Tu mensaje (opcional)</label>
+              <textarea id="mensaje" name="mensaje" rows="8"></textarea>
+            </div>
+
+            <button type="submit" id="btn-enviar">ENVIAR</button>
+
+            <div id="form-feedback" aria-live="polite"></div>
+          </form>
+        </div>
       </div>
     </section>
   </main>
