@@ -12,9 +12,50 @@ app.use(cors());
 app.use(compression());
 app.use(express.json());
 
+const PUBLIC_PAGE_PATHS = new Set([
+  '/',
+  '/gdl/inicio/',
+  '/mty/inicio/',
+  '/gdl/guia-empleo/',
+  '/mty/guia-empleo/',
+  '/gdl/contacto/',
+  '/mty/contacto/',
+]);
+const PUBLIC_PAGE_SLUGS = new Set(['inicio', 'guia-empleo', 'contacto']);
+
+function cleanPathname(pathname) {
+  return String(pathname || '/')
+    .replace(/\/{2,}/g, '/')
+    .replace(/\/+$/, match => (pathname === '/' ? match : '/'));
+}
+
+function canonicalPublicPath(pathname) {
+  let cleaned = cleanPathname(pathname);
+  const lowered = cleaned.toLowerCase();
+
+  if (lowered === '/index.html') return '/';
+
+  const nestedRegion = lowered.match(/^\/(gdl|mty)\/(gdl|mty)(?:\/([^/]+))?\/?(?:index\.html)?$/);
+  if (nestedRegion && PUBLIC_PAGE_SLUGS.has(nestedRegion[3] || 'inicio')) {
+    return `/${nestedRegion[2]}/${nestedRegion[3] || 'inicio'}/`;
+  }
+
+  const publicPage = lowered.match(/^\/(gdl|mty)\/([^/]+)\/?(?:index\.html)?$/);
+  if (publicPage && PUBLIC_PAGE_SLUGS.has(publicPage[2])) {
+    return `/${publicPage[1]}/${publicPage[2]}/`;
+  }
+
+  if (PUBLIC_PAGE_PATHS.has(lowered)) return lowered;
+  return null;
+}
+
 app.use((req, res, next) => {
+  const canonicalPath = canonicalPublicPath(req.path);
   if (req.hostname === 'www.soloempleos.com.mx') {
-    return res.redirect(301, `https://soloempleos.com.mx${req.originalUrl}`);
+    return res.redirect(301, `https://soloempleos.com.mx${canonicalPath || req.originalUrl}`);
+  }
+  if (canonicalPath && (canonicalPath !== req.path || Object.keys(req.query).length > 0)) {
+    return res.redirect(301, canonicalPath);
   }
   if (Object.prototype.hasOwnProperty.call(req.query, 'custom-css')) {
     return res.redirect(301, req.path || '/');
@@ -325,6 +366,9 @@ const legacyRedirects = [
   [/^\/(?:index\.php)?$/i, '/'],
   [/^\/wp-content(?:\/.*)?$/i, '/'],
   [/^\/wp-includes(?:\/.*)?$/i, '/'],
+  [/^\/wp-json(?:\/.*)?$/i, '/'],
+  [/^\/comments(?:\/feed)?\/?$/i, '/'],
+  [/^\/feed\/?$/i, '/'],
   [/^\/empleos-gdl(?:\/.*)?$/i, '/gdl/inicio/'],
   [/^\/empleos-mty(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/gdl\/\*$/i, '/gdl/inicio/'],
@@ -332,22 +376,30 @@ const legacyRedirects = [
   [/^\/gdl\/home-2\/?$/i, '/gdl/inicio/'],
   [/^\/gdl\/inicio-2\/?$/i, '/gdl/inicio/'],
   [/^\/gdl\/\d{4}\/.*$/i, '/gdl/inicio/'],
+  [/^\/gdl\/comments(?:\/feed)?\/?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/feed\/?$/i, '/gdl/inicio/'],
   [/^\/gdl\/empleospost(?:\/.*)?$/i, '/gdl/inicio/'],
   [/^\/gdl\/(?:consejos|entretenimiento-y-cultura|movilidad|vida-diaria)(?:\/.*)?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/gdl\/(?:consejos|entretenimiento-y-cultura|movilidad|vida-diaria|trabajos-y-derechos|mas-ediciones)(?:\/.*)?$/i, '/gdl/inicio/'],
   [/^\/gdl\/mas-ediciones\/?$/i, '/gdl/inicio/'],
   [/^\/gdl\/trabajos-y-derechos(?:\/.*)?$/i, '/gdl/inicio/'],
   [/^\/gdl\/wp-admin(?:\/.*)?$/i, '/gdl/inicio/'],
+  [/^\/gdl\/wp-json(?:\/.*)?$/i, '/gdl/inicio/'],
   [/^\/gdl\/wp-[^/]+\.php$/i, '/gdl/inicio/'],
   [/^\/mty\/\*$/i, '/mty/inicio/'],
   [/^\/mty\/?$/i, '/mty/inicio/'],
   [/^\/mty\/home-2\/?$/i, '/mty/inicio/'],
   [/^\/mty\/inicio-2\/?$/i, '/mty/inicio/'],
   [/^\/mty\/\d{4}\/.*$/i, '/mty/inicio/'],
+  [/^\/mty\/comments(?:\/feed)?\/?$/i, '/mty/inicio/'],
+  [/^\/mty\/feed\/?$/i, '/mty/inicio/'],
   [/^\/mty\/empleospost(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/(?:consejos|entretenimiento-y-cultura|movilidad|salud-y-bienestar|trabajo-y-derechos|vida-diaria)(?:\/.*)?$/i, '/mty/inicio/'],
+  [/^\/mty\/mty\/(?:consejos|entretenimiento-y-cultura|movilidad|salud-y-bienestar|trabajo-y-derechos|trabajos-y-derechos|vida-diaria|mas-ediciones)(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/mas-ediciones\/?$/i, '/mty/inicio/'],
   [/^\/mty\/trabajos-y-derechos(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-admin(?:\/.*)?$/i, '/mty/inicio/'],
+  [/^\/mty\/wp-json(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-[^/]+\.php$/i, '/mty/inicio/'],
   [/^\/mty\/wp-includes(?:\/.*)?$/i, '/mty/inicio/'],
   [/^\/mty\/wp-content(?:\/.*)?$/i, '/mty/inicio/'],
