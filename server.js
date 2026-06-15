@@ -35,6 +35,9 @@ function canonicalPublicPath(pathname) {
 
   if (lowered === '/index.html') return '/';
 
+  const regionRoot = lowered.match(/^\/(gdl|mty)\/?(?:index\.html)?$/);
+  if (regionRoot) return `/${regionRoot[1]}/inicio/`;
+
   const nestedRegion = lowered.match(/^\/(gdl|mty)\/(gdl|mty)(?:\/([^/]+))?\/?(?:index\.html)?$/);
   if (nestedRegion && PUBLIC_PAGE_SLUGS.has(nestedRegion[3] || 'inicio')) {
     return `/${nestedRegion[2]}/${nestedRegion[3] || 'inicio'}/`;
