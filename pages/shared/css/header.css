@@ -11,7 +11,6 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1rem;
-  position: relative;
 }
 
 .header-logo {
@@ -75,14 +74,17 @@
   color: var(--color-text);
 }
 
-.header-nav a.nav-ofertas {
-  background-color: var(--color-accent);
+.header-nav a.nav-ofertas,
+.header-nav a.header-whatsapp {
   color: var(--color-text);
-  margin-left: 0.5rem;
   border-radius: 3px;
   align-self: center;
   margin: 0.3rem 0 0.3rem 0.5rem;
   padding: 0.4rem 1rem;
+}
+
+.header-nav a.nav-ofertas {
+  background-color: var(--color-accent);
 }
 
 .header-nav a.nav-ofertas:hover {
@@ -90,31 +92,22 @@
   color: var(--color-text);
 }
 
-.header-whatsapp {
-  position: absolute;
-  right: 1rem;
-  top: 1rem;
-  display: flex;
+.header-nav a.header-whatsapp {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.42rem 0.75rem;
-  border-radius: 3px;
   background-color: #25d366;
   color: #061108;
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  transition: background-color 0.2s, transform 0.2s;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.header-whatsapp:hover {
+.header-nav a.header-whatsapp:hover {
   background-color: #1fbd5a;
   color: #061108;
-  transform: translateY(-1px);
 }
 
-.header-whatsapp img {
+.header-nav a.header-whatsapp img {
   width: 1rem;
   height: 1rem;
   display: block;
@@ -135,9 +128,4 @@
     padding: 0.5rem 0.8rem;
   }
 
-  .header-whatsapp {
-    position: static;
-    width: fit-content;
-    margin: 0.35rem auto 0.55rem;
-  }
 }
