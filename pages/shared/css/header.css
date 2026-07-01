@@ -97,14 +97,14 @@
   align-items: center;
   gap: 0.4rem;
   background-color: #25d366;
-  color: #061108;
+  color: var(--color-text);
   letter-spacing: 0;
   text-transform: none;
 }
 
 .header-nav a.header-whatsapp:hover {
   background-color: #1fbd5a;
-  color: #061108;
+  color: var(--color-text);
 }
 
 .header-nav a.header-whatsapp img {
