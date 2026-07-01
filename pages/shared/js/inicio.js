@@ -1,4 +1,6 @@
 (function () {
+  const WHATSAPP_NUMBER = '523334477077';
+
   function escapeAttr(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
@@ -8,9 +10,7 @@
   }
 
   function whatsappHref(telefono) {
-    let digits = String(telefono || '').replace(/\D/g, '');
-    if (digits.length === 10) digits = `52${digits}`;
-    return digits ? `https://wa.me/${digits}` : '';
+    return telefono ? `https://wa.me/${WHATSAPP_NUMBER}` : '';
   }
 
   function whatsappButton(telefono) {

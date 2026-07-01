@@ -264,17 +264,14 @@ function renderVacantes(region) {
     return '<p class="vacantes-empty">No hay vacantes disponibles</p>';
   }
   const MIN_CELLS = 8;
+  const WHATSAPP_NUMBER = '523334477077';
   const esc = s => String(s).replace(/"/g, '&quot;');
   const regionName = region === 'gdl' ? 'Guadalajara' : 'Monterrey';
   const vacancyAlt = v => {
     const fecha = v.fecha ? ` publicada el ${v.fecha}` : '';
     return `Vacante de empleo en ${regionName}${fecha} en Solo Empleos`;
   };
-  const waHref = telefono => {
-    let digits = String(telefono || '').replace(/\D/g, '');
-    if (digits.length === 10) digits = `52${digits}`;
-    return digits ? `https://wa.me/${digits}` : '';
-  };
+  const waHref = telefono => telefono ? `https://wa.me/${WHATSAPP_NUMBER}` : '';
   const items = data.map(v => {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const whatsappUrl = waHref(v.telefono);
