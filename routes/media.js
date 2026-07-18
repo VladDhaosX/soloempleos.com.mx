@@ -6,7 +6,7 @@ const { uploadsPath } = require('../content-paths');
 
 const router = express.Router();
 const REGIONS = new Set(['gdl', 'mty']);
-const TYPES = new Set(['vacantes', 'portadas']);
+const TYPES = new Set(['vacantes', 'portadas', 'cupones']);
 
 function safeFilename(value) {
   const filename = path.basename(String(value || ''));

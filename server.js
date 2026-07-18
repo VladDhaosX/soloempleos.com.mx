@@ -16,12 +16,17 @@ const PUBLIC_PAGE_PATHS = new Set([
   '/',
   '/gdl/inicio/',
   '/mty/inicio/',
+  '/gdl/cupones/',
   '/gdl/guia-empleo/',
   '/mty/guia-empleo/',
   '/gdl/contacto/',
   '/mty/contacto/',
 ]);
-const PUBLIC_PAGE_SLUGS = new Set(['inicio', 'guia-empleo', 'contacto']);
+const PUBLIC_PAGE_SLUGS = new Set(['inicio', 'cupones', 'guia-empleo', 'contacto']);
+
+function isPublicRegionPage(region, slug) {
+  return PUBLIC_PAGE_SLUGS.has(slug) && (slug !== 'cupones' || region === 'gdl');
+}
 
 function cleanPathname(pathname) {
   return String(pathname || '/')
@@ -39,12 +44,12 @@ function canonicalPublicPath(pathname) {
   if (regionRoot) return `/${regionRoot[1]}/inicio/`;
 
   const nestedRegion = lowered.match(/^\/(gdl|mty)\/(gdl|mty)(?:\/([^/]+))?\/?(?:index\.html)?$/);
-  if (nestedRegion && PUBLIC_PAGE_SLUGS.has(nestedRegion[3] || 'inicio')) {
+  if (nestedRegion && isPublicRegionPage(nestedRegion[2], nestedRegion[3] || 'inicio')) {
     return `/${nestedRegion[2]}/${nestedRegion[3] || 'inicio'}/`;
   }
 
   const publicPage = lowered.match(/^\/(gdl|mty)\/([^/]+)\/?(?:index\.html)?$/);
-  if (publicPage && PUBLIC_PAGE_SLUGS.has(publicPage[2])) {
+  if (publicPage && isPublicRegionPage(publicPage[1], publicPage[2])) {
     return `/${publicPage[1]}/${publicPage[2]}/`;
   }
 
@@ -192,6 +197,10 @@ function renderSitemapXml() {
       dataPath('mty', 'vacantes.json'),
       dataPath('mty', 'portada.json'),
     ]),
+    sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', [
+      path.join(PAGES_DIR, 'gdl', 'cupones', 'index.html'),
+      dataPath('gdl', 'cupones.json'),
+    ]),
     sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7', [
       path.join(PAGES_DIR, 'gdl', 'guia-empleo', 'index.html'),
     ]),
@@ -215,6 +224,9 @@ ${entries.join('\n')}
 
 function adjustFragmentForRegion(fragment, region) {
   if (!region) return fragment;
+  if (region !== 'gdl') {
+    fragment = fragment.replace(/<a\b[^>]*data-gdl-only[^>]*>[\s\S]*?<\/a>/g, '');
+  }
 
   return fragment
     .replace(/<a\b[^>]*>/g, tag => {
@@ -303,6 +315,33 @@ function injectVacantes(html, region) {
   return html.replace('<!-- SSR:VACANTES -->', renderVacantes(region));
 }
 
+function renderCupones() {
+  const file = dataPath('gdl', 'cupones.json');
+  let data;
+  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
+  if (!Array.isArray(data) || data.length === 0) {
+    return '<p class="vacantes-empty">No hay cupones disponibles</p>';
+  }
+
+  const esc = s => String(s).replace(/"/g, '&quot;');
+  return data.map(v => {
+    const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
+    const filename = encodeURIComponent(path.basename(v.url));
+    const sourcePath = uploadsPath('gdl', 'cupones', path.basename(v.url));
+    const thumbUrl = `/media/gdl/cupones/${filename}?w=640&q=68`;
+    const fullUrl = `/media/gdl/cupones/${filename}?w=1200&q=82`;
+    return `<div class="vacante-item">` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${imageDimensionAttrs(sourcePath)} loading="eager" decoding="async"${rot} ` +
+      `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
+    `</div>`;
+  }).join('');
+}
+
+function injectCupones(html) {
+  if (!html.includes('<!-- SSR:CUPONES -->')) return html;
+  return html.replace('<!-- SSR:CUPONES -->', renderCupones());
+}
+
 function renderPortada(region) {
   const file = dataPath(region, 'portada.json');
   try {
@@ -351,7 +390,7 @@ app.use((req, res, next) => {
     if (err) return next();
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');
-    res.send(injectPortadas(injectVacantes(injectFragments(html, region), region)));
+    res.send(injectPortadas(injectCupones(injectVacantes(injectFragments(html, region), region))));
   });
 });
 
@@ -423,6 +462,9 @@ for (const region of REGIONS) {
   app.use(`/${region}/data`, express.static(path.dirname(dataPath(region, 'placeholder.json')), { setHeaders: setDataHeaders }));
   app.use(`/${region}/uploads/vacantes`, express.static(uploadsPath(region, 'vacantes'), { setHeaders: setUploadHeaders }));
   app.use(`/${region}/uploads/portadas`, express.static(uploadsPath(region, 'portadas'), { setHeaders: setUploadHeaders }));
+  if (region === 'gdl') {
+    app.use('/gdl/uploads/cupones', express.static(uploadsPath('gdl', 'cupones'), { setHeaders: setUploadHeaders }));
+  }
 }
 app.use(require('./routes/media'));
 app.use(express.static(PAGES_DIR, { setHeaders: setPageAssetHeaders }));
@@ -433,6 +475,7 @@ app.use('/soloempleos/gdl', require('./routes/portada')('gdl'));
 app.use('/soloempleos/mty', require('./routes/portada')('mty'));
 app.use('/soloempleos/gdl', require('./routes/vacantes')('gdl'));
 app.use('/soloempleos/mty', require('./routes/vacantes')('mty'));
+app.use('/soloempleos/gdl', require('./routes/cupones')('gdl'));
 app.use('/soloempleos/contacto', require('./routes/contacto'));
 app.use('/soloempleos', require('./routes/backup'));
 

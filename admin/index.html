@@ -47,8 +47,14 @@
 
     <main class="admin-main">
 
+      <nav class="admin-section-tabs" aria-label="Secciones del administrador">
+        <button class="admin-section-tab active" type="button" data-admin-section="portada">Portada</button>
+        <button class="admin-section-tab" type="button" data-admin-section="vacantes">Vacantes</button>
+        <button class="admin-section-tab" type="button" data-admin-section="cupones" data-gdl-only>Cupones</button>
+      </nav>
+
       <!-- Portada del dia -->
-      <section class="admin-card" id="section-portada">
+      <section class="admin-card" id="section-portada" data-admin-section-panel="portada">
         <h2>Portada del dia</h2>
         <div class="portada-preview-wrap">
           <img id="portada-preview" src="" alt="Portada actual" class="portada-img">
@@ -62,7 +68,7 @@
       </section>
 
       <!-- Vacantes -->
-      <section class="admin-card" id="section-vacantes">
+      <section class="admin-card" id="section-vacantes" data-admin-section-panel="vacantes" hidden>
         <h2>Vacantes</h2>
         <label class="upload-btn" for="input-vacantes">
           + Subir vacante(s)
@@ -74,6 +80,25 @@
         </label>
         <div id="vacantes-status" class="upload-status"></div>
         <div id="vacantes-grid" class="admin-vacantes-grid"></div>
+      </section>
+
+      <!-- Cupones Guadalajara -->
+      <section class="admin-card" id="section-cupones" data-admin-section-panel="cupones" hidden>
+        <h2>Cupones GDL</h2>
+        <div class="coupon-actions">
+          <label class="upload-btn" for="input-cupones">
+            + Subir cupón(es)
+            <input type="file" id="input-cupones" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+          </label>
+          <label class="upload-btn upload-btn-replace" for="input-cupones-carpeta">
+            Reemplazar todo (carpeta)
+            <input type="file" id="input-cupones-carpeta" accept="image/jpeg,image/png,image/webp" webkitdirectory style="display:none">
+          </label>
+        </div>
+        <div id="cupones-status" class="upload-status"></div>
+        <p id="cupones-count" class="cupones-count"></p>
+        <div id="cupones-grid" class="admin-vacantes-grid admin-cupones-grid"></div>
+        <p class="admin-drag-help">Arrastra los cupones para cambiar el orden en que aparecen.<br>Formatos: JPG, PNG o WebP · Proporción recomendada: 4:5 vertical.</p>
       </section>
 
     </main>

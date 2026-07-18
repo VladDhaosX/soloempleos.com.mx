@@ -2,6 +2,8 @@
   const state = {
     token: localStorage.getItem('se_token'),
     region: 'gdl',
+    section: 'portada',
+    cupones: [],
   };
 
   // ──────────────────────────
@@ -220,6 +222,7 @@
       setBackupStatus('ok', `Backup restaurado: ${data.files} archivo(s).`);
       await loadPortada();
       await loadVacantes();
+      if (state.region === 'gdl') await loadCupones();
     } catch (err) {
       setBackupStatus('error', err.message || 'Error al restaurar backup');
     } finally {
@@ -345,7 +348,7 @@
     document.querySelectorAll('.vacante-menu.is-open').forEach(menu => menu.classList.remove('is-open'));
   });
 
-  function initDragAndDrop(grid) {
+  function initDragAndDrop(grid, collection = 'vacantes') {
     // ── Desktop (HTML5 DnD) ──────────────────────────
     let dragSrc = null;
 
@@ -379,7 +382,7 @@
       item.addEventListener('drop', (e) => {
         e.preventDefault();
         if (!dragSrc || dragSrc === item) return;
-        reorderItems(grid, dragSrc, item);
+        reorderItems(grid, dragSrc, item, collection);
       });
     });
 
@@ -443,35 +446,36 @@
         grid.querySelectorAll('.admin-vacante-item').forEach(i => i.classList.remove('drag-over'));
 
         const target = getItemAtPoint(touch.clientX, touch.clientY);
-        if (target && target !== touchSrc) reorderItems(grid, touchSrc, target);
+        if (target && target !== touchSrc) reorderItems(grid, touchSrc, target, collection);
         touchSrc = null;
       });
     });
   }
 
-  function reorderItems(grid, src, target) {
+  function reorderItems(grid, src, target, collection) {
     const items = [...grid.querySelectorAll('.admin-vacante-item')];
     const srcIdx = items.indexOf(src);
     const dstIdx = items.indexOf(target);
     if (srcIdx < dstIdx) target.after(src);
     else target.before(src);
     target.classList.remove('drag-over');
-    saveOrder(grid);
+    saveOrder(grid, collection);
   }
 
-  async function saveOrder(grid) {
+  async function saveOrder(grid, collection) {
     const ids = [...grid.querySelectorAll('.admin-vacante-item')].map(el => el.dataset.id);
-    UI.setStatus('vacantes-status', 'loading', 'Guardando orden...');
-    const res = await apiRequest(`/soloempleos/${state.region}/vacantes/reorder`, {
+    const statusId = collection === 'cupones' ? 'cupones-status' : 'vacantes-status';
+    UI.setStatus(statusId, 'loading', 'Guardando orden...');
+    const res = await apiRequest(`/soloempleos/${state.region}/${collection}/reorder`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
     });
     if (!res) return;
     if (res.ok) {
-      UI.setStatus('vacantes-status', 'ok', 'Orden guardado.');
+      UI.setStatus(statusId, 'ok', 'Orden guardado.');
     } else {
-      UI.setStatus('vacantes-status', 'error', 'Error al guardar orden');
+      UI.setStatus(statusId, 'error', 'Error al guardar orden');
     }
   }
 
@@ -579,6 +583,132 @@
   // ──────────────────────────
   // Region switch
   // ──────────────────────────
+  // Cupones Guadalajara
+  async function loadCupones() {
+    if (state.region !== 'gdl') return;
+    const grid = document.getElementById('cupones-grid');
+    grid.innerHTML = '<p style="color:#aaa;font-size:.85rem">Cargando...</p>';
+    try {
+      const res = await fetch('/gdl/data/cupones.json');
+      if (!res.ok) throw new Error();
+      renderCuponesGrid(await res.json());
+    } catch (_) {
+      state.cupones = [];
+      grid.innerHTML = '<p style="color:#aaa;font-size:.85rem">Sin cupones</p>';
+      document.getElementById('cupones-count').textContent = '0 cupones publicados';
+    }
+  }
+
+  function renderCuponesGrid(data) {
+    const grid = document.getElementById('cupones-grid');
+    state.cupones = Array.isArray(data) ? data : [];
+    document.getElementById('cupones-count').textContent = `${state.cupones.length} cupón(es) publicado(s)`;
+    if (!state.cupones.length) {
+      grid.innerHTML = '<p style="color:#aaa;font-size:.85rem">Sin cupones</p>';
+      return;
+    }
+
+    grid.innerHTML = state.cupones.map(cupon => {
+      const rotation = Number(cupon.rotation) || 0;
+      return `
+        <div class="admin-vacante-item admin-cupon-item" data-id="${escapeAttr(cupon.id)}">
+          <img src="${mediaUrl('gdl', 'cupones', cupon.url, '?w=480&q=72')}" alt="Cupón" loading="lazy"
+               style="transform:rotate(${rotation}deg)" onerror="this.onerror=null;this.style.opacity='.3'">
+          <span class="cupon-drag-handle" title="Arrastrar" aria-hidden="true">⠿</span>
+          <button class="btn-rotate-cupon" data-id="${escapeAttr(cupon.id)}" type="button" title="Rotar 90°">↻</button>
+          <button class="btn-delete-cupon" data-id="${escapeAttr(cupon.id)}" type="button" title="Eliminar">×</button>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.btn-rotate-cupon').forEach(btn => {
+      btn.addEventListener('click', () => rotateCupon(btn.dataset.id));
+    });
+    grid.querySelectorAll('.btn-delete-cupon').forEach(btn => {
+      btn.addEventListener('click', () => deleteCupon(btn.dataset.id));
+    });
+    initDragAndDrop(grid, 'cupones');
+  }
+
+  function sortedImages(files) {
+    return Array.from(files)
+      .filter(file => file.type.startsWith('image/'))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
+  }
+
+  async function replaceCarpetaCupones(files) {
+    const images = sortedImages(files);
+    if (!images.length) {
+      UI.setStatus('cupones-status', 'error', 'No se encontraron imágenes en la carpeta');
+      return;
+    }
+    if (!await UI.confirm(`¿Reemplazar todos los cupones con ${images.length} imágenes?\nEsta acción elimina los cupones actuales.`)) return;
+
+    UI.setStatus('cupones-status', 'loading', `Subiendo ${images.length} imagen(es)...`);
+    const fd = new FormData();
+    images.forEach(file => fd.append('imagenes', file));
+    const res = await apiRequest('/soloempleos/gdl/cupones/replace-all', { method: 'POST', body: fd });
+    if (!res) return;
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      UI.setStatus('cupones-status', 'ok', `${data.total} cupón(es) reemplazado(s).`);
+      await loadCupones();
+    } else {
+      UI.setStatus('cupones-status', 'error', data.error || 'Error al reemplazar');
+    }
+  }
+
+  async function uploadCupones(files) {
+    const images = sortedImages(files);
+    for (let i = 0; i < images.length; i++) {
+      UI.setStatus('cupones-status', 'loading', `Subiendo ${i + 1} de ${images.length}...`);
+      const fd = new FormData();
+      fd.append('imagen', images[i]);
+      const res = await apiRequest('/soloempleos/gdl/cupones', { method: 'POST', body: fd });
+      if (!res) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        UI.setStatus('cupones-status', 'error', data.error || 'Error al subir');
+        return;
+      }
+    }
+    UI.setStatus('cupones-status', 'ok', `${images.length} cupón(es) subido(s).`);
+    await loadCupones();
+  }
+
+  async function rotateCupon(id) {
+    const res = await apiRequest(`/soloempleos/gdl/cupones/${id}/rotate`, { method: 'PUT' });
+    if (!res) return;
+    if (!res.ok) {
+      UI.setStatus('cupones-status', 'error', 'Error al rotar');
+      return;
+    }
+    const { rotation } = await res.json();
+    const item = [...document.querySelectorAll('#cupones-grid .admin-cupon-item')].find(el => el.dataset.id === id);
+    if (item) item.querySelector('img').style.transform = `rotate(${rotation}deg)`;
+  }
+
+  async function deleteCupon(id) {
+    if (!await UI.confirm('¿Eliminar este cupón?')) return;
+    const res = await apiRequest(`/soloempleos/gdl/cupones/${id}`, { method: 'DELETE' });
+    if (!res) return;
+    if (res.ok) {
+      renderCuponesGrid(state.cupones.filter(cupon => cupon.id !== id));
+    } else {
+      UI.setStatus('cupones-status', 'error', 'Error al eliminar cupón');
+    }
+  }
+
+  function showAdminSection(section) {
+    if (state.region !== 'gdl' && section === 'cupones') section = 'vacantes';
+    state.section = section;
+    document.querySelectorAll('[data-admin-section]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.adminSection === section);
+    });
+    document.querySelectorAll('[data-admin-section-panel]').forEach(panel => {
+      panel.hidden = panel.dataset.adminSectionPanel !== section;
+    });
+  }
+
   function setRegion(region) {
     state.region = region;
     document.querySelectorAll('.region-btn').forEach(btn => {
@@ -586,8 +716,14 @@
     });
     UI.clearStatus('portada-status');
     UI.clearStatus('vacantes-status');
+    UI.clearStatus('cupones-status');
+    document.querySelectorAll('[data-gdl-only]').forEach(el => {
+      el.hidden = region !== 'gdl';
+    });
+    showAdminSection(state.section);
     loadPortada();
     loadVacantes();
+    if (region === 'gdl') loadCupones();
   }
 
   // ──────────────────────────
@@ -598,6 +734,7 @@
       UI.showPanel();
       loadPortada();
       loadVacantes();
+      loadCupones();
     } else {
       UI.showLogin();
     }
@@ -619,6 +756,7 @@
         UI.showPanel();
         loadPortada();
         loadVacantes();
+        loadCupones();
       } catch (err) {
         errEl.textContent = err.message || 'Credenciales incorrectas';
       } finally {
@@ -644,6 +782,10 @@
       btn.addEventListener('click', () => setRegion(btn.dataset.region));
     });
 
+    document.querySelectorAll('[data-admin-section]').forEach(btn => {
+      btn.addEventListener('click', () => showAdminSection(btn.dataset.adminSection));
+    });
+
     // Portada upload
     document.getElementById('input-portada').addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -662,6 +804,15 @@
     document.getElementById('input-vacantes-carpeta').addEventListener('change', (e) => {
       const files = e.target.files;
       if (files.length) replaceCarpetaVacantes(files);
+      e.target.value = '';
+    });
+    document.getElementById('input-cupones').addEventListener('change', (e) => {
+      if (e.target.files.length) uploadCupones(e.target.files);
+      e.target.value = '';
+    });
+
+    document.getElementById('input-cupones-carpeta').addEventListener('change', (e) => {
+      if (e.target.files.length) replaceCarpetaCupones(e.target.files);
       e.target.value = '';
     });
   });

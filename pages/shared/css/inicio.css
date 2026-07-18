@@ -354,6 +354,27 @@ body.page-ready .hero-video {
   min-height: 0;
 }
 
+body[data-content="cupones"] .vacantes-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+body[data-content="cupones"] .vacante-item {
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  border-radius: 3px;
+}
+
+body[data-content="cupones"] .vacante-item img {
+  object-fit: contain;
+}
+
+body[data-content="cupones"] .vacante-item:hover img {
+  filter: none;
+}
+
 .vacantes-empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -369,11 +390,19 @@ body.page-ready .hero-video {
   .hero {
     margin: 1.5rem 2rem 0;
   }
+
+  body[data-content="cupones"] .vacantes-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
   .vacantes-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  body[data-content="cupones"] .vacantes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .vacantes-title {
@@ -398,6 +427,10 @@ body.page-ready .hero-video {
   }
 
   .vacantes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-content="cupones"] .vacantes-grid {
     grid-template-columns: 1fr;
   }
 

@@ -5,6 +5,10 @@
   const region = document.body.dataset.region || 'gdl';
 
   function adjustRegionLinks(root) {
+    root.querySelectorAll('[data-gdl-only]').forEach(el => {
+      el.hidden = region !== 'gdl';
+    });
+
     root.querySelectorAll('[data-region-href]').forEach(el => {
       const base = el.getAttribute('data-region-href');
       const adjusted = base.replace(/\/(gdl|mty)\//g, `/${region}/`);

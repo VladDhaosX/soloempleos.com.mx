@@ -186,9 +186,9 @@ button[type="submit"]:disabled {
 
 .region-btn.active,
 .region-btn:hover {
-  background: #333;
-  color: var(--text);
-  border-color: #555;
+  background: #2b2100;
+  color: #f4b400;
+  border-color: #f4b400;
 }
 
 .btn-logout,
@@ -264,6 +264,34 @@ button[type="submit"]:disabled {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 1.5rem;
+}
+
+.admin-card[hidden] {
+  display: none;
+}
+
+.admin-section-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-section-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+}
+
+.admin-section-tab:hover,
+.admin-section-tab.active {
+  border-bottom-color: #f4b400;
+  color: #f4b400;
 }
 
 .admin-card h2 {
@@ -464,6 +492,89 @@ button[type="submit"]:disabled {
   outline-offset: -2px;
 }
 
+.coupon-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.coupon-actions .upload-btn-replace {
+  margin-top: 0;
+}
+
+.coupon-actions .upload-btn:first-child {
+  background: #f4b400;
+  border-color: #f4b400;
+  color: #111;
+}
+
+.coupon-actions .upload-btn:first-child:hover {
+  background: #d99f00;
+}
+
+#section-cupones h2 {
+  color: var(--text);
+  font-size: 1.35rem;
+}
+
+.cupones-count,
+.admin-drag-help {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
+}
+
+.admin-cupon-item {
+  padding-bottom: 38px;
+}
+
+.admin-cupon-item > img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+  background: #fff;
+}
+
+.cupon-drag-handle,
+.btn-rotate-cupon,
+.btn-delete-cupon {
+  position: absolute;
+  bottom: 7px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cupon-drag-handle {
+  left: 7px;
+  width: 28px;
+  color: var(--muted);
+  cursor: grab;
+  letter-spacing: 1px;
+}
+
+.btn-rotate-cupon,
+.btn-delete-cupon {
+  background: #252525;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 28px;
+}
+
+.btn-rotate-cupon {
+  right: 41px;
+}
+
+.btn-delete-cupon {
+  right: 7px;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
 /* ──────────────────────────
    MODAL CONFIRM
 ────────────────────────── */
@@ -579,6 +690,14 @@ button[type="submit"]:disabled {
 
   .admin-vacantes-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .coupon-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-section-tabs {
+    overflow-x: auto;
   }
 
   .admin-header {
