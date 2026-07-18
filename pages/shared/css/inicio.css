@@ -375,6 +375,57 @@ body[data-content="cupones"] .vacante-item:hover img {
   filter: none;
 }
 
+.cuponera-cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin: -0.25rem 0 1.75rem;
+}
+
+.cuponera-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 340px;
+  padding: 0.8rem 1.2rem;
+  background: #1a73e8;
+  border: 1px solid #1557b0;
+  border-radius: 6px;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(26, 115, 232, 0.22);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cuponera-cta:hover,
+.cuponera-cta:focus-visible {
+  background: #1557b0;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(26, 115, 232, 0.3);
+}
+
+.cuponera-cta svg {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  fill: currentColor;
+}
+
+.cuponera-cta span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cuponera-cta strong {
+  font-size: 0.95rem;
+}
+
+.cuponera-cta small {
+  margin-top: 0.15rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.76rem;
+}
+
 .vacantes-empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -432,6 +483,15 @@ body[data-content="cupones"] .vacante-item:hover img {
 
   body[data-content="cupones"] .vacantes-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cuponera-cta-wrap {
+    margin-bottom: 1.25rem;
+  }
+
+  .cuponera-cta {
+    width: 100%;
+    min-width: 0;
   }
 
   .vacante-whatsapp {
