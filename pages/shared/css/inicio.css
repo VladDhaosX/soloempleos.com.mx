@@ -177,7 +177,8 @@ body.page-ready .hero-video {
 }
 
 .vacante-whatsapp::after,
-.vacante-modal-whatsapp::after {
+.vacante-modal-whatsapp::after,
+.vacante-modal-download::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 50%;
@@ -200,7 +201,9 @@ body.page-ready .hero-video {
 .vacante-whatsapp:hover::after,
 .vacante-whatsapp:focus-visible::after,
 .vacante-modal-whatsapp:hover::after,
-.vacante-modal-whatsapp:focus-visible::after {
+.vacante-modal-whatsapp:focus-visible::after,
+.vacante-modal-download:hover::after,
+.vacante-modal-download:focus-visible::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
@@ -214,6 +217,17 @@ body.page-ready .hero-video {
 
 .vacante-whatsapp:hover::after,
 .vacante-whatsapp:focus-visible::after {
+  transform: translateY(0);
+}
+
+.vacante-modal-download::after {
+  left: auto;
+  right: 0;
+  transform: translateY(3px);
+}
+
+.vacante-modal-download:hover::after,
+.vacante-modal-download:focus-visible::after {
   transform: translateY(0);
 }
 
@@ -294,6 +308,43 @@ body.page-ready .hero-video {
   object-fit: contain;
   display: block;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.vacante-modal-download {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  background: #1a73e8;
+  border: 1px solid #1557b0;
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.vacante-modal.is-cupones .vacante-modal-download {
+  display: inline-flex;
+}
+
+.vacante-modal-download:hover,
+.vacante-modal-download:focus-visible {
+  background: #1557b0;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.vacante-modal-download svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
 }
 
 .vacante-modal-close {
@@ -426,6 +477,29 @@ body[data-content="cupones"] .vacante-item:hover img {
   font-size: 0.76rem;
 }
 
+.cupones-destacados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 2rem;
+}
+
+.cupon-destacado {
+  overflow: hidden;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  border-radius: 4px;
+}
+
+.cupon-destacado img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
 .vacantes-empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -494,6 +568,11 @@ body[data-content="cupones"] .vacante-item:hover img {
     min-width: 0;
   }
 
+  .cupones-destacados {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   .vacante-whatsapp {
     right: 10px;
     bottom: 10px;
@@ -501,7 +580,8 @@ body[data-content="cupones"] .vacante-item:hover img {
     height: 42px;
   }
 
-  .vacante-modal-whatsapp {
+  .vacante-modal-whatsapp,
+  .vacante-modal-download {
     right: 1rem;
     bottom: 1rem;
     width: 48px;
