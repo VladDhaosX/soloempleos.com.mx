@@ -330,7 +330,7 @@ function renderCupones() {
     const sourcePath = uploadsPath('gdl', 'cupones', path.basename(v.url));
     const thumbUrl = `/media/gdl/cupones/${filename}?w=640&q=68`;
     const fullUrl = `/media/gdl/cupones/${filename}?w=1200&q=82`;
-    return `<div class="vacante-item">` +
+    return `<div class="vacante-item" data-cupon>` +
       `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${imageDimensionAttrs(sourcePath)} loading="eager" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
     `</div>`;
