@@ -7,6 +7,7 @@ const fs = require('fs');
 const { ADMIN_DIR, PAGES_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
 
 const app = express();
+const COUPONS_VISIBLE = false;
 
 app.use(cors());
 app.use(compression());
@@ -16,13 +17,18 @@ const PUBLIC_PAGE_PATHS = new Set([
   '/',
   '/gdl/inicio/',
   '/mty/inicio/',
-  '/gdl/cupones/',
+  ...(COUPONS_VISIBLE ? ['/gdl/cupones/'] : []),
   '/gdl/guia-empleo/',
   '/mty/guia-empleo/',
   '/gdl/contacto/',
   '/mty/contacto/',
 ]);
-const PUBLIC_PAGE_SLUGS = new Set(['inicio', 'cupones', 'guia-empleo', 'contacto']);
+const PUBLIC_PAGE_SLUGS = new Set([
+  'inicio',
+  'guia-empleo',
+  'contacto',
+  ...(COUPONS_VISIBLE ? ['cupones'] : []),
+]);
 
 function isPublicRegionPage(region, slug) {
   return PUBLIC_PAGE_SLUGS.has(slug) && (slug !== 'cupones' || region === 'gdl');
@@ -58,6 +64,10 @@ function canonicalPublicPath(pathname) {
 }
 
 app.use((req, res, next) => {
+  if (!COUPONS_VISIBLE && /^\/gdl\/cupones(?:\/|$)/i.test(req.path)) {
+    return res.redirect(302, '/gdl/inicio/');
+  }
+
   const canonicalPath = canonicalPublicPath(req.path);
   if (req.hostname === 'www.soloempleos.com.mx') {
     return res.redirect(301, `https://soloempleos.com.mx${canonicalPath || req.originalUrl}`);
@@ -197,10 +207,12 @@ function renderSitemapXml() {
       dataPath('mty', 'vacantes.json'),
       dataPath('mty', 'portada.json'),
     ]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', [
-      path.join(PAGES_DIR, 'gdl', 'cupones', 'index.html'),
-      dataPath('gdl', 'cupones.json'),
-    ]),
+    ...(COUPONS_VISIBLE ? [
+      sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', [
+        path.join(PAGES_DIR, 'gdl', 'cupones', 'index.html'),
+        dataPath('gdl', 'cupones.json'),
+      ]),
+    ] : []),
     sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7', [
       path.join(PAGES_DIR, 'gdl', 'guia-empleo', 'index.html'),
     ]),
@@ -316,6 +328,8 @@ function injectVacantes(html, region) {
 }
 
 function renderCupones() {
+  if (!COUPONS_VISIBLE) return '';
+
   const file = dataPath('gdl', 'cupones.json');
   let data;
   try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
