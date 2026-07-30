@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const sharp = require('sharp');
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'soloempleos-cupones-'));
 process.env.CONTENT_DIR = tempDir;
@@ -21,11 +22,26 @@ async function run() {
   const headers = { Authorization: `Bearer ${token}` };
 
   try {
+    const png = await sharp({
+      create: { width: 800, height: 500, channels: 3, background: '#1d4ed8' },
+    }).png().toBuffer();
+    const jpeg = await sharp({
+      create: { width: 900, height: 600, channels: 3, background: '#f59e0b' },
+    }).jpeg().toBuffer();
+
     const form = new FormData();
-    form.append('imagen', new Blob([Buffer.from('fake-png')], { type: 'image/png' }), 'cupon.png');
+    form.append('imagen', new Blob([png], { type: 'image/png' }), 'cupon.png');
     let res = await fetch(`${base}/cupones`, { method: 'POST', headers, body: form });
     assert.equal(res.status, 200);
     const created = await res.json();
+
+    const uploadDir = path.join(tempDir, 'gdl', 'uploads', 'cupones');
+    assert.equal(fs.readdirSync(path.join(uploadDir, '.cache')).filter(name => name.endsWith('.webp')).length, 3);
+
+    const invalid = new FormData();
+    invalid.append('imagen', new Blob([Buffer.from('not-a-jpeg')], { type: 'image/jpeg' }), 'invalid.jpg');
+    res = await fetch(`${base}/cupones`, { method: 'POST', headers, body: invalid });
+    assert.equal(res.status, 400);
 
     res = await fetch(`${base}/cupones/${created.id}/rotate`, { method: 'PUT', headers });
     assert.equal(res.status, 200);
@@ -39,11 +55,12 @@ async function run() {
     assert.equal(res.status, 200);
 
     const folder = new FormData();
-    folder.append('imagenes', new Blob([Buffer.from('one')], { type: 'image/png' }), '01.png');
-    folder.append('imagenes', new Blob([Buffer.from('two')], { type: 'image/jpeg' }), '02.jpg');
+    folder.append('imagenes', new Blob([png], { type: 'image/png' }), '01.png');
+    folder.append('imagenes', new Blob([jpeg], { type: 'image/jpeg' }), '02.jpg');
     res = await fetch(`${base}/cupones/replace-all`, { method: 'POST', headers, body: folder });
     assert.equal(res.status, 200);
     assert.equal((await res.json()).total, 2);
+    await require('../services/media-variants').waitForBackgroundWork();
 
     const savedAfterReplace = JSON.parse(fs.readFileSync(path.join(tempDir, 'gdl', 'data', 'cupones.json'), 'utf8'));
     assert.equal(savedAfterReplace.length, 2);
@@ -54,7 +71,7 @@ async function run() {
 
     const saved = JSON.parse(fs.readFileSync(path.join(tempDir, 'gdl', 'data', 'cupones.json'), 'utf8'));
     assert.deepEqual(saved, []);
-    console.log('Cupones API: upload, replace-all, rotate, reorder y delete OK');
+    console.log('Cupones API: validacion, precalculo, replace-all, rotate, reorder y delete OK');
   } finally {
     await new Promise(resolve => server.close(resolve));
     if (path.resolve(tempDir).startsWith(`${path.resolve(os.tmpdir())}${path.sep}`)) {

@@ -2,12 +2,23 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { randomUUID } = require('crypto');
 const requireAuth = require('../middleware/auth');
 const { dataPath, uploadsPath } = require('../content-paths');
+const {
+  MIME_FORMATS,
+  InvalidImageError,
+  MediaQueueFullError,
+  extensionForMime,
+  prewarmFile,
+  removeMediaArtifacts,
+  removeUploadedFiles,
+  schedulePrewarm,
+  validateUploadedImage,
+} = require('../services/media-variants');
 
 module.exports = function (region) {
   const router = express.Router();
-
   const uploadDir = uploadsPath(region, 'vacantes');
   const jsonPath = dataPath(region, 'vacantes.json');
 
@@ -17,36 +28,33 @@ module.exports = function (region) {
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const ts = Date.now().toString();
-      cb(null, `${ts}.jpg`);
+      cb(null, `${Date.now()}-${randomUUID()}${extensionForMime(file.mimetype) || '.upload'}`);
     },
   });
 
+  function imageFileFilter(req, file, cb) {
+    if (!MIME_FORMATS[file.mimetype]) {
+      return cb(new Error('Solo se permiten imagenes JPEG, PNG o WebP'));
+    }
+    cb(null, true);
+  }
+
   const upload = multer({
     storage,
-    fileFilter: (req, file, cb) => {
-      if (!file.mimetype.startsWith('image/')) {
-        return cb(new Error('Solo se permiten imágenes'));
-      }
-      cb(null, true);
-    },
+    fileFilter: imageFileFilter,
     limits: { fileSize: 10 * 1024 * 1024 },
   });
 
   const uploadMany = multer({
     storage,
-    fileFilter: (req, file, cb) => {
-      if (!file.mimetype.startsWith('image/')) {
-        return cb(new Error('Solo se permiten imágenes'));
-      }
-      cb(null, true);
-    },
+    fileFilter: imageFileFilter,
     limits: { fileSize: 10 * 1024 * 1024, files: 200 },
   });
 
   function readVacantes() {
     try {
-      return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      return Array.isArray(data) ? data : [];
     } catch (_) {
       return [];
     }
@@ -57,56 +65,81 @@ module.exports = function (region) {
     fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
   }
 
-  router.post('/vacantes/replace-all', requireAuth, uploadMany.array('imagenes', 200), (req, res) => {
+  function respondImageError(res, err, context) {
+    if (err instanceof InvalidImageError) {
+      return res.status(400).json({ error: err.message });
+    }
+    if (err instanceof MediaQueueFullError) {
+      res.set('Retry-After', '5');
+      return res.status(503).json({ error: 'Procesamiento de imagenes ocupado; intenta de nuevo' });
+    }
+    console.error(`${context} error:`, err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+
+  function removeStoredItem(item) {
+    if (!item || !item.url) return;
+    const filename = path.basename(item.url);
+    try {
+      removeMediaArtifacts(path.join(uploadDir, filename), filename);
+    } catch (err) {
+      console.error('vacantes cleanup error:', err);
+    }
+  }
+
+  router.post('/vacantes/replace-all', requireAuth, uploadMany.array('imagenes', 200), async (req, res) => {
     const files = req.files || [];
     if (!files.length) {
-      return res.status(400).json({ error: 'No se recibieron imágenes' });
+      return res.status(400).json({ error: 'No se recibieron imagenes' });
     }
 
     try {
-      // Delete all existing vacante files
-      const existing = readVacantes();
-      for (const v of existing) {
-        const filepath = path.join(uploadDir, path.basename(v.url));
-        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-      }
+      for (const file of files) await validateUploadedImage(file);
 
+      const existing = readVacantes();
       const now = new Date().toISOString().slice(0, 10);
-      const base = Date.now();
-      const lista = files.map((f, i) => ({
-        id: String(base + i),
-        url: `/${region}/uploads/vacantes/${f.filename}`,
+      const lista = files.map(file => ({
+        id: path.parse(file.filename).name,
+        url: `/${region}/uploads/vacantes/${file.filename}`,
         fecha: now,
         rotation: 0,
         telefono: '',
       }));
 
       writeVacantes(lista);
-      res.json({ ok: true, total: lista.length });
+      const mediaJob = schedulePrewarm(
+        files.map(file => ({ region, type: 'vacantes', filename: file.filename })),
+        `vacantes replace-all ${region}`
+      );
+      for (const item of existing) removeStoredItem(item);
+
+      res.json({ ok: true, total: lista.length, mediaJob });
     } catch (err) {
-      console.error('vacantes replace-all error:', err);
-      res.status(500).json({ error: 'Error interno' });
+      removeUploadedFiles(files);
+      respondImageError(res, err, 'vacantes replace-all');
     }
   });
 
-  router.post('/vacantes', requireAuth, upload.single('imagen'), (req, res) => {
+  router.post('/vacantes', requireAuth, upload.single('imagen'), async (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ error: 'No se recibió imagen' });
+      return res.status(400).json({ error: 'No se recibio imagen' });
     }
 
-    const ts = Date.now().toString();
-    const url = `/${region}/uploads/vacantes/${req.file.filename}`;
-    const now = new Date().toISOString().slice(0, 10);
-
     try {
+      await validateUploadedImage(req.file);
+      await prewarmFile(region, 'vacantes', req.file.filename);
+
+      const id = path.parse(req.file.filename).name;
+      const url = `/${region}/uploads/vacantes/${req.file.filename}`;
+      const now = new Date().toISOString().slice(0, 10);
       const lista = readVacantes();
-      const item = { id: ts, url, fecha: now, telefono: '' };
+      const item = { id, url, fecha: now, rotation: 0, telefono: '' };
       lista.unshift(item);
       writeVacantes(lista);
-      res.json({ id: ts, url });
+      res.json(item);
     } catch (err) {
-      console.error('vacantes write error:', err);
-      res.status(500).json({ error: 'Error interno' });
+      removeUploadedFiles([req.file]);
+      respondImageError(res, err, 'vacantes write');
     }
   });
 
@@ -117,11 +150,10 @@ module.exports = function (region) {
     }
     try {
       const lista = readVacantes();
-      const map = Object.fromEntries(lista.map(v => [v.id, v]));
+      const map = Object.fromEntries(lista.map(item => [item.id, item]));
       const reordered = ids.map(id => map[id]).filter(Boolean);
-      // Keep any items not included in ids at the end
-      const missing = lista.filter(v => !ids.includes(v.id));
-      writeVacantes([...reordered, ...missing]);
+      const included = new Set(ids);
+      writeVacantes([...reordered, ...lista.filter(item => !included.has(item.id))]);
       res.json({ ok: true });
     } catch (err) {
       console.error('vacantes reorder error:', err);
@@ -130,12 +162,11 @@ module.exports = function (region) {
   });
 
   router.put('/vacantes/:id/rotate', requireAuth, (req, res) => {
-    const { id } = req.params;
     try {
       const lista = readVacantes();
-      const item = lista.find(v => v.id === id);
+      const item = lista.find(vacante => vacante.id === req.params.id);
       if (!item) return res.status(404).json({ error: 'Vacante no encontrada' });
-      item.rotation = (((item.rotation || 0) + 90) % 360);
+      item.rotation = ((item.rotation || 0) + 90) % 360;
       writeVacantes(lista);
       res.json({ ok: true, rotation: item.rotation });
     } catch (err) {
@@ -145,15 +176,13 @@ module.exports = function (region) {
   });
 
   router.put('/vacantes/:id/telefono', requireAuth, (req, res) => {
-    const { id } = req.params;
     const telefono = String(req.body.telefono || '').trim();
     if (telefono.length > 30) {
       return res.status(400).json({ error: 'El numero no debe exceder 30 caracteres' });
     }
-
     try {
       const lista = readVacantes();
-      const item = lista.find(v => v.id === id);
+      const item = lista.find(vacante => vacante.id === req.params.id);
       if (!item) return res.status(404).json({ error: 'Vacante no encontrada' });
       item.telefono = telefono;
       writeVacantes(lista);
@@ -165,24 +194,13 @@ module.exports = function (region) {
   });
 
   router.delete('/vacantes/:id', requireAuth, (req, res) => {
-    const { id } = req.params;
     try {
       const lista = readVacantes();
-      const item = lista.find(v => v.id === id);
-      if (!item) {
-        return res.status(404).json({ error: 'Vacante no encontrada' });
-      }
+      const item = lista.find(vacante => vacante.id === req.params.id);
+      if (!item) return res.status(404).json({ error: 'Vacante no encontrada' });
 
-      const filtered = lista.filter(v => v.id !== id);
-      writeVacantes(filtered);
-
-      // Delete file if it exists within the uploads dir
-      const filename = path.basename(item.url);
-      const filepath = path.join(uploadDir, filename);
-      if (fs.existsSync(filepath)) {
-        fs.unlinkSync(filepath);
-      }
-
+      writeVacantes(lista.filter(vacante => vacante.id !== req.params.id));
+      removeStoredItem(item);
       res.json({ ok: true });
     } catch (err) {
       console.error('vacantes delete error:', err);

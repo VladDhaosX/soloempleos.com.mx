@@ -1,11 +1,11 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { ZipArchive } = require('archiver');
 const multer = require('multer');
 const unzipper = require('unzipper');
 const requireAuth = require('../middleware/auth');
 const { CONTENT_DIR, REGIONS, contentPath } = require('../content-paths');
+const { scheduleReferencedMediaWarmup } = require('../services/media-variants');
 
 const router = express.Router();
 const RESTORE_ROOTS = new Set(['gdl/data', 'gdl/uploads', 'mty/data', 'mty/uploads']);
@@ -83,6 +83,9 @@ async function readEntries(buffer) {
 }
 
 function validateEntries(entries) {
+  const cacheEntry = entries.find(entry => entry.path.split('/').includes('.cache'));
+  if (cacheEntry) throw new Error('El ZIP no debe incluir caches de imagenes');
+
   const files = entries.filter(entry => entry.type !== 'Directory' && getRestoreRoot(entry.path));
   if (!files.length) throw new Error('El ZIP no contiene archivos para restaurar');
 
@@ -112,7 +115,7 @@ function clearRestoreRoots(roots) {
   }
 }
 
-router.get('/backup', requireAuth, (req, res) => {
+router.get('/backup', requireAuth, async (req, res) => {
   const timestamp = new Date()
     .toISOString()
     .replace(/[:.]/g, '-')
@@ -120,10 +123,17 @@ router.get('/backup', requireAuth, (req, res) => {
     .slice(0, 19);
   const filename = `soloempleos-backup-${timestamp}.zip`;
 
+  let archive;
+  try {
+    const { ZipArchive } = await import('archiver');
+    archive = new ZipArchive({ zlib: { level: 0 } });
+  } catch (err) {
+    console.error('backup module error:', err);
+    return res.status(500).json({ error: 'Error al preparar el backup' });
+  }
+
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-  const archive = new ZipArchive({ zlib: { level: 0 } });
 
   archive.on('error', err => {
     console.error('backup archive error:', err);
@@ -170,7 +180,8 @@ router.post('/backup/restore', requireAuth, upload.single('backup'), async (req,
       fs.writeFileSync(target, await entry.file.buffer());
     }
 
-    res.json({ ok: true, files: files.length, restored: [...roots].sort() });
+    const mediaJob = scheduleReferencedMediaWarmup('backup restore');
+    res.json({ ok: true, files: files.length, restored: [...roots].sort(), mediaJob });
   } catch (err) {
     console.error('backup restore error:', err);
     res.status(400).json({ error: err.message || 'No se pudo restaurar el backup' });

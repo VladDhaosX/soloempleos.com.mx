@@ -5,6 +5,17 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 const requireAuth = require('../middleware/auth');
 const { dataPath, uploadsPath } = require('../content-paths');
+const {
+  MIME_FORMATS,
+  InvalidImageError,
+  MediaQueueFullError,
+  extensionForMime,
+  prewarmFile,
+  removeMediaArtifacts,
+  removeUploadedFiles,
+  schedulePrewarm,
+  validateUploadedImage,
+} = require('../services/media-variants');
 
 module.exports = function (region) {
   const router = express.Router();
@@ -17,14 +28,18 @@ module.exports = function (region) {
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const ext = file.mimetype === 'image/png' ? '.png' : file.mimetype === 'image/webp' ? '.webp' : '.jpg';
-      cb(null, `${randomUUID()}${ext}`);
+      cb(null, `${randomUUID()}${extensionForMime(file.mimetype) || '.upload'}`);
     },
   });
 
   const upload = multer({
     storage,
-    fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
+    fileFilter: (req, file, cb) => {
+      if (!MIME_FORMATS[file.mimetype]) {
+        return cb(new Error('Solo se permiten imagenes JPEG, PNG o WebP'));
+      }
+      cb(null, true);
+    },
     limits: { fileSize: 10 * 1024 * 1024, files: 200 },
   });
 
@@ -51,36 +66,66 @@ module.exports = function (region) {
     };
   }
 
-  router.post('/cupones/replace-all', requireAuth, upload.array('imagenes', 200), (req, res) => {
+  function respondImageError(res, err, context) {
+    if (err instanceof InvalidImageError) {
+      return res.status(400).json({ error: err.message });
+    }
+    if (err instanceof MediaQueueFullError) {
+      res.set('Retry-After', '5');
+      return res.status(503).json({ error: 'Procesamiento de imagenes ocupado; intenta de nuevo' });
+    }
+    console.error(`${context} error:`, err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+
+  function removeStoredItem(item) {
+    if (!item || !item.url) return;
+    const filename = path.basename(item.url);
+    try {
+      removeMediaArtifacts(path.join(uploadDir, filename), filename);
+    } catch (err) {
+      console.error('cupones cleanup error:', err);
+    }
+  }
+
+  router.post('/cupones/replace-all', requireAuth, upload.array('imagenes', 200), async (req, res) => {
     const files = req.files || [];
-    if (!files.length) return res.status(400).json({ error: 'No se recibieron imágenes' });
+    if (!files.length) return res.status(400).json({ error: 'No se recibieron imagenes' });
 
     try {
+      for (const file of files) await validateUploadedImage(file);
+
       const existing = readCupones();
       const lista = files.map(newCupon);
       writeCupones(lista);
-      for (const item of existing) {
-        const filePath = path.join(uploadDir, path.basename(item.url));
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      }
-      res.json({ ok: true, total: lista.length });
+      const mediaJob = schedulePrewarm(
+        files.map(file => ({ region, type: 'cupones', filename: file.filename })),
+        `cupones replace-all ${region}`
+      );
+      for (const item of existing) removeStoredItem(item);
+
+      res.json({ ok: true, total: lista.length, mediaJob });
     } catch (err) {
-      console.error('cupones replace-all error:', err);
-      res.status(500).json({ error: 'Error interno' });
+      removeUploadedFiles(files);
+      respondImageError(res, err, 'cupones replace-all');
     }
   });
 
-  router.post('/cupones', requireAuth, upload.single('imagen'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
+  router.post('/cupones', requireAuth, upload.single('imagen'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No se recibio imagen' });
+
     try {
+      await validateUploadedImage(req.file);
+      await prewarmFile(region, 'cupones', req.file.filename);
+
       const lista = readCupones();
       const item = newCupon(req.file);
       lista.unshift(item);
       writeCupones(lista);
       res.json(item);
     } catch (err) {
-      console.error('cupones write error:', err);
-      res.status(500).json({ error: 'Error interno' });
+      removeUploadedFiles([req.file]);
+      respondImageError(res, err, 'cupones write');
     }
   });
 
@@ -104,7 +149,7 @@ module.exports = function (region) {
     try {
       const lista = readCupones();
       const item = lista.find(cupon => cupon.id === req.params.id);
-      if (!item) return res.status(404).json({ error: 'Cupón no encontrado' });
+      if (!item) return res.status(404).json({ error: 'Cupon no encontrado' });
       item.rotation = ((item.rotation || 0) + 90) % 360;
       writeCupones(lista);
       res.json({ ok: true, rotation: item.rotation });
@@ -118,10 +163,9 @@ module.exports = function (region) {
     try {
       const lista = readCupones();
       const item = lista.find(cupon => cupon.id === req.params.id);
-      if (!item) return res.status(404).json({ error: 'Cupón no encontrado' });
+      if (!item) return res.status(404).json({ error: 'Cupon no encontrado' });
       writeCupones(lista.filter(cupon => cupon.id !== req.params.id));
-      const filePath = path.join(uploadDir, path.basename(item.url));
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      removeStoredItem(item);
       res.json({ ok: true });
     } catch (err) {
       console.error('cupones delete error:', err);

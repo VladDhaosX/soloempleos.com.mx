@@ -5,6 +5,7 @@ const cors = require('cors');
 const compression = require('compression');
 const fs = require('fs');
 const { ADMIN_DIR, PAGES_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
+const { scheduleReferencedMediaWarmup } = require('./services/media-variants');
 
 const app = express();
 const COUPONS_VISIBLE = false;
@@ -501,4 +502,6 @@ app.use('/soloempleos', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Solo Empleos API corriendo en puerto ${PORT}`);
+  const mediaJob = scheduleReferencedMediaWarmup('startup');
+  console.log('media prewarm scheduled:', mediaJob);
 });

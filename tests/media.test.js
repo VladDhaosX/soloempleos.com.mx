@@ -18,8 +18,12 @@ async function run() {
     await sharp({
       create: { width: 800, height: 400, channels: 3, background: '#1957c4' },
     }).jpeg().toFile(path.join(uploads, 'sample.jpg'));
+    await sharp({
+      create: { width: 900, height: 500, channels: 3, background: '#0f766e' },
+    }).jpeg().toFile(path.join(uploads, 'queued.jpg'));
 
     const mediaRouter = require('../routes/media');
+    const mediaService = require('../services/media-variants');
     assert.deepEqual(Object.keys(mediaRouter.PRESETS), ['thumb', 'full', 'cover', 'admin']);
     assert.equal(sharp.concurrency(), 1);
     assert.equal(sharp.cache().files.max, 0);
@@ -58,10 +62,37 @@ async function run() {
     assert.equal((await fetch(`${base}/media/gdl/vacantes/sample.jpg?preset=unknown`)).status, 400);
     assert.equal((await fetch(`${base}/media/gdl/vacantes/sample.jpg?w=640&q=68`)).status, 400);
     assert.equal((await fetch(`${base}/media/gdl/vacantes/sample.jpg?preset=thumb&v=1`)).status, 400);
+    assert.equal((await fetch(`${base}/media/gdl/portadas/sample.jpg?preset=thumb`)).status, 400);
     assert.equal((await fetch(`${base}/media/gdl/vacantes/missing.jpg?preset=thumb`)).status, 404);
     assert.equal((await fetch(`${base}/media/mty/cupones/sample.jpg?preset=thumb`)).status, 404);
 
-    console.log('Media API: presets cerrados, WebP, cache, concurrencia y rutas invalidas OK');
+    let releaseBlocker;
+    const blocker = new Promise(resolve => { releaseBlocker = resolve; });
+    const active = mediaService.__testing.enqueueTransform(() => blocker);
+    const pending = Array.from(
+      { length: mediaService.__testing.maxPendingTransforms },
+      () => mediaService.__testing.enqueueTransform(() => Promise.resolve())
+    );
+    assert.deepEqual(mediaService.queueStats(), {
+      active: 1,
+      pending: mediaService.__testing.maxPendingTransforms,
+      maxActive: mediaService.__testing.maxActiveTransforms,
+      maxPending: mediaService.__testing.maxPendingTransforms,
+      inFlight: 0,
+    });
+    const overloadedResponse = await fetch(`${base}/media/gdl/vacantes/queued.jpg?preset=thumb`);
+    assert.equal(overloadedResponse.status, 503);
+    assert.equal(overloadedResponse.headers.get('retry-after'), '5');
+    await assert.rejects(
+      mediaService.__testing.enqueueTransform(() => Promise.resolve()),
+      err => err instanceof mediaService.MediaQueueFullError
+    );
+    releaseBlocker();
+    await Promise.all([active, ...pending]);
+    assert.equal(mediaService.queueStats().active, 0);
+    assert.equal(mediaService.queueStats().pending, 0);
+
+    console.log('Media API: presets cerrados, WebP, cache, cola acotada y rutas invalidas OK');
   } finally {
     if (server) await new Promise(resolve => server.close(resolve));
     fs.rmSync(tempDir, { recursive: true, force: true });
