@@ -45,7 +45,7 @@ router.get('/media/:region/:type/:filename', async (req, res) => {
       return res.status(503).json({ error: 'Imagen temporalmente no disponible' });
     }
 
-    if (err.code !== 'MEDIA_VARIANT_COOLDOWN') {
+    if (!['MEDIA_VARIANT_COOLDOWN', 'MEDIA_VARIANT_LOCKED'].includes(err.code)) {
       console.error('optimized media error:', err);
     }
     res.set('Cache-Control', 'public, max-age=300');

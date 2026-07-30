@@ -92,7 +92,14 @@ async function run() {
     assert.equal(mediaService.queueStats().active, 0);
     assert.equal(mediaService.queueStats().pending, 0);
 
-    console.log('Media API: presets cerrados, WebP, cache, cola acotada y rutas invalidas OK');
+    const firstWarmup = mediaService.scheduleReferencedMediaWarmup('lock test');
+    const duplicateWarmup = mediaService.scheduleReferencedMediaWarmup('lock test duplicate');
+    assert.equal(firstWarmup.sharedLock, true);
+    assert.equal(duplicateWarmup.skipped, 'shared-lock-active');
+    await mediaService.waitForBackgroundWork();
+    assert.equal(fs.existsSync(path.join(tempDir, '.media-prewarm.lock')), false);
+
+    console.log('Media API: presets, cache y colas acotadas entre instancias OK');
   } finally {
     if (server) await new Promise(resolve => server.close(resolve));
     fs.rmSync(tempDir, { recursive: true, force: true });

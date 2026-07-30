@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { createHash, randomUUID } = require('crypto');
 const sharp = require('sharp');
-const { REGIONS, dataPath, uploadsPath } = require('../content-paths');
+const { CONTENT_DIR, REGIONS, dataPath, uploadsPath } = require('../content-paths');
 
 const MAX_INPUT_PIXELS = 40_000_000;
 const MAX_ACTIVE_TRANSFORMS = 1;
@@ -35,6 +35,9 @@ const DEFAULT_PRESETS = Object.freeze({
   cupones: 'thumb',
 });
 const VARIANT_FAILURE_COOLDOWN_MS = 5 * 60 * 1000;
+const VARIANT_LOCK_STALE_MS = 2 * 60 * 1000;
+const VARIANT_LOCK_WAIT_MS = 10 * 1000;
+const PREWARM_LOCK_STALE_MS = 5 * 60 * 1000;
 
 const inFlight = new Map();
 const failedVariants = new Map();
@@ -98,6 +101,61 @@ function enqueueTransform(task) {
     transformQueue.push({ task, resolve, reject });
     drainTransformQueue();
   });
+}
+
+function tryAcquireFileLock(lockPath, staleAfterMs) {
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  const token = `${process.pid}-${randomUUID()}`;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fd = fs.openSync(lockPath, 'wx');
+      try {
+        fs.writeFileSync(fd, token);
+      } finally {
+        fs.closeSync(fd);
+      }
+      return token;
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+
+      let stale = false;
+      try {
+        stale = Date.now() - fs.statSync(lockPath).mtimeMs > staleAfterMs;
+      } catch (statErr) {
+        if (statErr.code === 'ENOENT') continue;
+        throw statErr;
+      }
+      if (!stale || attempt > 0) return null;
+      try {
+        fs.unlinkSync(lockPath);
+      } catch (unlinkErr) {
+        if (unlinkErr.code !== 'ENOENT') return null;
+      }
+    }
+  }
+  return null;
+}
+
+function releaseFileLock(lockPath, token) {
+  if (!token) return;
+  try {
+    if (fs.readFileSync(lockPath, 'utf8') === token) fs.unlinkSync(lockPath);
+  } catch (_) {}
+}
+
+async function waitForSharedVariant(cachePath, lockPath) {
+  const deadline = Date.now() + VARIANT_LOCK_WAIT_MS;
+  while (Date.now() < deadline) {
+    if (fs.existsSync(cachePath)) return cachePath;
+    if (!fs.existsSync(lockPath)) break;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  if (fs.existsSync(cachePath)) return cachePath;
+
+  const err = new Error('Otra instancia esta preparando la variante');
+  err.code = 'MEDIA_VARIANT_LOCKED';
+  throw err;
 }
 
 function isAllowedPreset(type, presetName) {
@@ -182,10 +240,16 @@ async function createVariant(source, filename, presetName) {
 
   const generation = enqueueTransform(async () => {
     fs.mkdirSync(cacheDir, { recursive: true });
-    removeStaleVariants(cacheDir, filename, presetName, cachePath);
+    const lockPath = `${cachePath}.lock`;
+    const lockToken = tryAcquireFileLock(lockPath, VARIANT_LOCK_STALE_MS);
+    if (!lockToken) return waitForSharedVariant(cachePath, lockPath);
     const tempPath = path.join(cacheDir, `.${path.basename(cachePath)}.${randomUUID()}.tmp`);
 
     try {
+      // Otra instancia pudo completar el archivo mientras este trabajo
+      // esperaba su turno en la cola local.
+      if (fs.existsSync(cachePath)) return cachePath;
+      removeStaleVariants(cacheDir, filename, presetName, cachePath);
       await sharp(source, {
         failOn: 'warning',
         limitInputPixels: MAX_INPUT_PIXELS,
@@ -208,6 +272,8 @@ async function createVariant(source, filename, presetName) {
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
       } catch (_) {}
       throw err;
+    } finally {
+      releaseFileLock(lockPath, lockToken);
     }
   });
 
@@ -345,7 +411,19 @@ function referencedMediaItems() {
 }
 
 function scheduleReferencedMediaWarmup(label = 'startup') {
-  return schedulePrewarm(referencedMediaItems(), label);
+  const lockPath = path.join(CONTENT_DIR, '.media-prewarm.lock');
+  const lockToken = tryAcquireFileLock(lockPath, PREWARM_LOCK_STALE_MS);
+  if (!lockToken) {
+    return { id: null, files: 0, skipped: 'shared-lock-active' };
+  }
+
+  const job = schedulePrewarm(referencedMediaItems(), label);
+  const scheduledWork = backgroundTail;
+  scheduledWork.then(
+    () => releaseFileLock(lockPath, lockToken),
+    () => releaseFileLock(lockPath, lockToken)
+  );
+  return { ...job, sharedLock: true };
 }
 
 function waitForBackgroundWork() {
@@ -407,5 +485,7 @@ module.exports = {
     enqueueTransform,
     maxActiveTransforms: MAX_ACTIVE_TRANSFORMS,
     maxPendingTransforms: MAX_PENDING_TRANSFORMS,
+    releaseFileLock,
+    tryAcquireFileLock,
   },
 };
