@@ -160,10 +160,10 @@
     el.textContent = msg || '';
   }
 
-  function mediaUrl(region, type, url, params = '') {
+  function mediaUrl(region, type, url, preset = 'admin') {
     const filename = String(url || '').split('/').pop();
     if (!filename) return '';
-    return `/media/${region}/${type}/${encodeURIComponent(filename)}${params}`;
+    return `/media/${region}/${type}/${encodeURIComponent(filename)}?preset=${encodeURIComponent(preset)}`;
   }
 
   async function downloadBackup() {
@@ -241,7 +241,7 @@
       const data = await res.json();
       const img = document.getElementById('portada-preview');
       const ph = document.getElementById('portada-placeholder');
-      img.src = mediaUrl(state.region, 'portadas', data.url, `?w=720&q=76&v=${data.version || Date.now()}`);
+      img.src = mediaUrl(state.region, 'portadas', data.url, 'cover');
       img.style.display = 'block';
       img.onerror = () => {
         img.style.display = 'none';
@@ -298,7 +298,7 @@
       const telefono = v.telefono || '';
       return `
       <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}" data-telefono="${escapeAttr(telefono)}">
-        <img src="${mediaUrl(state.region, 'vacantes', v.url, '?w=480&q=70')}" alt="Vacante" loading="lazy"
+        <img src="${mediaUrl(state.region, 'vacantes', v.url, 'admin')}" alt="Vacante" loading="lazy"
              style="transform:rotate(${rot}deg)"
              onerror="this.onerror=null;this.style.opacity='.3'">
         <div class="vacante-menu">
@@ -612,7 +612,7 @@
       const rotation = Number(cupon.rotation) || 0;
       return `
         <div class="admin-vacante-item admin-cupon-item" data-id="${escapeAttr(cupon.id)}">
-          <img src="${mediaUrl('gdl', 'cupones', cupon.url, '?w=480&q=72')}" alt="Cupón" loading="lazy"
+          <img src="${mediaUrl('gdl', 'cupones', cupon.url, 'admin')}" alt="Cupón" loading="lazy"
                style="transform:rotate(${rotation}deg)" onerror="this.onerror=null;this.style.opacity='.3'">
           <span class="cupon-drag-handle" title="Arrastrar" aria-hidden="true">⠿</span>
           <button class="btn-rotate-cupon" data-id="${escapeAttr(cupon.id)}" type="button" title="Rotar 90°">↻</button>

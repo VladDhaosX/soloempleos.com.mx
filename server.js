@@ -303,8 +303,8 @@ function renderVacantes(region) {
     const whatsappUrl = waHref(v.telefono);
     const filename = encodeURIComponent(path.basename(v.url));
     const sourcePath = uploadsPath(region, 'vacantes', path.basename(v.url));
-    const thumbUrl = `/media/${region}/vacantes/${filename}?w=640&q=68`;
-    const fullUrl = `/media/${region}/vacantes/${filename}?w=1200&q=82`;
+    const thumbUrl = `/media/${region}/vacantes/${filename}?preset=thumb`;
+    const fullUrl = `/media/${region}/vacantes/${filename}?preset=full`;
     const contact = whatsappUrl
       ? `<a class="vacante-whatsapp" href="${esc(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">` +
           `<img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">` +
@@ -342,8 +342,8 @@ function renderCupones() {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const filename = encodeURIComponent(path.basename(v.url));
     const sourcePath = uploadsPath('gdl', 'cupones', path.basename(v.url));
-    const thumbUrl = `/media/gdl/cupones/${filename}?w=640&q=68`;
-    const fullUrl = `/media/gdl/cupones/${filename}?w=1200&q=82`;
+    const thumbUrl = `/media/gdl/cupones/${filename}?preset=thumb`;
+    const fullUrl = `/media/gdl/cupones/${filename}?preset=full`;
     return `<div class="vacante-item" data-cupon>` +
       `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${imageDimensionAttrs(sourcePath)} loading="eager" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
@@ -367,7 +367,7 @@ function renderPortada(region) {
     const sourcePath = uploadsPath(region, 'portadas', rawFilename);
     const dimensions = readImageDimensions(sourcePath);
     return {
-      url: `/media/${region}/portadas/${encodeURIComponent(rawFilename)}?w=720&q=76&v=${version || Date.now()}`,
+      url: `/media/${region}/portadas/${encodeURIComponent(rawFilename)}?preset=cover`,
       width: String(dimensions ? dimensions.width : 720),
       height: String(dimensions ? dimensions.height : 900),
     };
