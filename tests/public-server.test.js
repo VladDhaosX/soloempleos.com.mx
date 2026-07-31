@@ -6,6 +6,7 @@ const path = require('path');
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'soloempleos-public-server-'));
 process.env.CONTENT_DIR = tempDir;
 process.env.JWT_SECRET = 'public-server-test-secret';
+process.env.NODE_ENV = 'test';
 
 const { dataPath } = require('../content-paths');
 

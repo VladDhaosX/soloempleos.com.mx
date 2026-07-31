@@ -214,6 +214,6 @@ function startServer(port = process.env.PORT || 3000, host) {
     : app.listen(port, onListening);
 }
 
-if (require.main === module) startServer();
+if (process.env.NODE_ENV !== 'test') startServer();
 
 module.exports = { app, startServer };
