@@ -5,22 +5,23 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 const requireAuth = require('../middleware/auth');
 const { dataPath, uploadsPath } = require('../content-paths');
+const { createMediaStore } = require('../services/media-store');
 const {
   MIME_FORMATS,
   InvalidImageError,
   MediaQueueFullError,
   extensionForMime,
   prewarmFile,
-  removeMediaArtifacts,
   removeUploadedFiles,
   schedulePrewarm,
   validateUploadedImage,
 } = require('../services/media-variants');
 
-module.exports = function (region) {
+module.exports = function (region, options = {}) {
   const router = express.Router();
   const uploadDir = uploadsPath(region, 'vacantes');
   const jsonPath = dataPath(region, 'vacantes.json');
+  const mediaStore = options.mediaStore || createMediaStore();
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -77,11 +78,10 @@ module.exports = function (region) {
     return res.status(500).json({ error: 'Error interno' });
   }
 
-  function removeStoredItem(item) {
-    if (!item || !item.url) return;
-    const filename = path.basename(item.url);
+  async function removeStoredItem(item) {
+    if (!item) return;
     try {
-      removeMediaArtifacts(path.join(uploadDir, filename), filename);
+      await mediaStore.deleteItem(item, { uploadDir });
     } catch (err) {
       console.error('vacantes cleanup error:', err);
     }
@@ -93,28 +93,41 @@ module.exports = function (region) {
       return res.status(400).json({ error: 'No se recibieron imagenes' });
     }
 
+    const storedMedia = [];
     try {
-      for (const file of files) await validateUploadedImage(file);
+      const metadata = [];
+      for (const file of files) metadata.push(await validateUploadedImage(file));
+
+      if (mediaStore.enabled) {
+        for (let index = 0; index < files.length; index += 1) {
+          storedMedia.push(await mediaStore.storeFile(files[index], region, 'vacantes', metadata[index]));
+        }
+      }
 
       const existing = readVacantes();
       const now = new Date().toISOString().slice(0, 10);
-      const lista = files.map(file => ({
-        id: path.parse(file.filename).name,
-        url: `/${region}/uploads/vacantes/${file.filename}`,
-        fecha: now,
-        rotation: 0,
-        telefono: '',
-      }));
+      const lista = files.map((file, index) => {
+        const media = storedMedia[index] || null;
+        return {
+          id: path.parse(file.filename).name,
+          url: mediaStore.publicUrl(media, 'vacantes') || `/${region}/uploads/vacantes/${file.filename}`,
+          fecha: now,
+          rotation: 0,
+          telefono: '',
+          ...(media ? { media } : {}),
+        };
+      });
 
       writeVacantes(lista);
-      const mediaJob = schedulePrewarm(
+      const mediaJob = mediaStore.enabled ? null : schedulePrewarm(
         files.map(file => ({ region, type: 'vacantes', filename: file.filename })),
         `vacantes replace-all ${region}`
       );
-      for (const item of existing) removeStoredItem(item);
+      for (const item of existing) await removeStoredItem(item);
 
       res.json({ ok: true, total: lista.length, mediaJob });
     } catch (err) {
+      await Promise.allSettled(storedMedia.filter(Boolean).map(media => mediaStore.deleteMedia(media)));
       removeUploadedFiles(files);
       respondImageError(res, err, 'vacantes replace-all');
     }
@@ -125,19 +138,22 @@ module.exports = function (region) {
       return res.status(400).json({ error: 'No se recibio imagen' });
     }
 
+    let media = null;
     try {
-      await validateUploadedImage(req.file);
-      await prewarmFile(region, 'vacantes', req.file.filename);
+      const metadata = await validateUploadedImage(req.file);
+      media = await mediaStore.storeFile(req.file, region, 'vacantes', metadata);
+      if (!media) await prewarmFile(region, 'vacantes', req.file.filename);
 
       const id = path.parse(req.file.filename).name;
-      const url = `/${region}/uploads/vacantes/${req.file.filename}`;
+      const url = mediaStore.publicUrl(media, 'vacantes') || `/${region}/uploads/vacantes/${req.file.filename}`;
       const now = new Date().toISOString().slice(0, 10);
       const lista = readVacantes();
-      const item = { id, url, fecha: now, rotation: 0, telefono: '' };
+      const item = { id, url, fecha: now, rotation: 0, telefono: '', ...(media ? { media } : {}) };
       lista.unshift(item);
       writeVacantes(lista);
       res.json(item);
     } catch (err) {
+      if (media) await mediaStore.deleteMedia(media).catch(() => {});
       removeUploadedFiles([req.file]);
       respondImageError(res, err, 'vacantes write');
     }
@@ -193,14 +209,14 @@ module.exports = function (region) {
     }
   });
 
-  router.delete('/vacantes/:id', requireAuth, (req, res) => {
+  router.delete('/vacantes/:id', requireAuth, async (req, res) => {
     try {
       const lista = readVacantes();
       const item = lista.find(vacante => vacante.id === req.params.id);
       if (!item) return res.status(404).json({ error: 'Vacante no encontrada' });
 
       writeVacantes(lista.filter(vacante => vacante.id !== req.params.id));
-      removeStoredItem(item);
+      await removeStoredItem(item);
       res.json({ ok: true });
     } catch (err) {
       console.error('vacantes delete error:', err);

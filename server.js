@@ -185,6 +185,37 @@ function imageDimensionAttrs(filePath) {
     : '';
 }
 
+function safeHttpsUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' ? url.href : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function storedMediaUrl(item, region, type, preset) {
+  const remotePreset = safeHttpsUrl(item?.media?.urls?.[preset]);
+  if (remotePreset) return remotePreset;
+
+  const remoteFallback = safeHttpsUrl(item?.url);
+  if (remoteFallback) return remoteFallback;
+
+  const filename = path.basename(String(item?.url || ''));
+  return filename
+    ? `/media/${region}/${type}/${encodeURIComponent(filename)}?preset=${encodeURIComponent(preset)}`
+    : '';
+}
+
+function storedImageDimensionAttrs(item, filePath) {
+  const width = Number(item?.media?.width);
+  const height = Number(item?.media?.height);
+  if (Number.isInteger(width) && width > 0 && Number.isInteger(height) && height > 0) {
+    return ` width="${width}" height="${height}"`;
+  }
+  return imageDimensionAttrs(filePath);
+}
+
 function sitemapEntry(loc, priority, paths) {
   return `  <url>
     <loc>${escapeXml(loc)}</loc>
@@ -302,17 +333,16 @@ function renderVacantes(region) {
   const items = data.map(v => {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
     const whatsappUrl = waHref(v.telefono);
-    const filename = encodeURIComponent(path.basename(v.url));
     const sourcePath = uploadsPath(region, 'vacantes', path.basename(v.url));
-    const thumbUrl = `/media/${region}/vacantes/${filename}?preset=thumb`;
-    const fullUrl = `/media/${region}/vacantes/${filename}?preset=full`;
+    const thumbUrl = storedMediaUrl(v, region, 'vacantes', 'thumb');
+    const fullUrl = storedMediaUrl(v, region, 'vacantes', 'full');
     const contact = whatsappUrl
       ? `<a class="vacante-whatsapp" href="${esc(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">` +
           `<img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">` +
         `</a>`
       : '';
     return `<div class="vacante-item">` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}"${imageDimensionAttrs(sourcePath)} loading="lazy" decoding="async"${rot} ` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}"${storedImageDimensionAttrs(v, sourcePath)} loading="lazy" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
       contact +
     `</div>`;
@@ -341,12 +371,11 @@ function renderCupones() {
   const esc = s => String(s).replace(/"/g, '&quot;');
   return data.map(v => {
     const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
-    const filename = encodeURIComponent(path.basename(v.url));
     const sourcePath = uploadsPath('gdl', 'cupones', path.basename(v.url));
-    const thumbUrl = `/media/gdl/cupones/${filename}?preset=thumb`;
-    const fullUrl = `/media/gdl/cupones/${filename}?preset=full`;
+    const thumbUrl = storedMediaUrl(v, 'gdl', 'cupones', 'thumb');
+    const fullUrl = storedMediaUrl(v, 'gdl', 'cupones', 'full');
     return `<div class="vacante-item" data-cupon>` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${imageDimensionAttrs(sourcePath)} loading="eager" decoding="async"${rot} ` +
+      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${storedImageDimensionAttrs(v, sourcePath)} loading="eager" decoding="async"${rot} ` +
       `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
     `</div>`;
   }).join('');
@@ -360,15 +389,20 @@ function injectCupones(html) {
 function renderPortada(region) {
   const file = dataPath(region, 'portada.json');
   try {
-    const { url, version } = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!url) {
+    const portada = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!portada.url) {
       return { url: '/shared/img/placeholder.svg', width: '400', height: '300' };
     }
-    const rawFilename = path.basename(url);
+    const rawFilename = path.basename(portada.url);
     const sourcePath = uploadsPath(region, 'portadas', rawFilename);
-    const dimensions = readImageDimensions(sourcePath);
+    const storedWidth = Number(portada.media?.width);
+    const storedHeight = Number(portada.media?.height);
+    const dimensions = Number.isInteger(storedWidth) && storedWidth > 0 &&
+      Number.isInteger(storedHeight) && storedHeight > 0
+      ? { width: storedWidth, height: storedHeight }
+      : readImageDimensions(sourcePath);
     return {
-      url: `/media/${region}/portadas/${encodeURIComponent(rawFilename)}?preset=cover`,
+      url: storedMediaUrl(portada, region, 'portadas', 'cover'),
       width: String(dimensions ? dimensions.width : 720),
       height: String(dimensions ? dimensions.height : 900),
     };

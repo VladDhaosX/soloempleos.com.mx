@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { createMediaStore } = require('../services/media-store');
 const { createR2Storage, mediaKey } = require('../services/r2-storage');
 
 (async () => {
@@ -52,7 +53,31 @@ const { createR2Storage, mediaKey } = require('../services/r2-storage');
     assert.equal(calls[1].options.method, 'DELETE');
     assert.match(calls[1].url, /soloempleos-media-prod\/gdl\/vacantes\/imagen\.jpg$/);
 
-    console.log('R2 storage: configuracion, carga, URLs fijas y eliminacion OK');
+    const secondPath = path.join(tempDir, 'segunda.jpg');
+    fs.writeFileSync(secondPath, Buffer.from([5, 6, 7]));
+    const mediaStore = createMediaStore({ r2Storage: storage });
+    const stored = await mediaStore.storeFile({
+      path: secondPath,
+      filename: 'segunda.jpg',
+      mimetype: 'image/jpeg',
+    }, 'gdl', 'vacantes', { width: 900, height: 1200 });
+    assert.equal(fs.existsSync(secondPath), false);
+    assert.equal(stored.width, 900);
+    assert.equal(stored.height, 1200);
+    assert.equal(mediaStore.publicUrl(stored, 'vacantes'), stored.urls.full);
+
+    assert.equal(await mediaStore.deleteItem({ media: stored }), true);
+    assert.equal(calls[3].options.method, 'DELETE');
+
+    const localPath = path.join(tempDir, 'local.jpg');
+    fs.writeFileSync(localPath, Buffer.from([8, 9]));
+    const localStore = createMediaStore({
+      r2Storage: { enabled: false, configured: false },
+    });
+    assert.equal(await localStore.storeFile({ path: localPath }, 'gdl', 'vacantes', {}), null);
+    assert.equal(fs.existsSync(localPath), true);
+
+    console.log('R2 storage: configuracion, carga, URLs fijas, fallback y eliminacion OK');
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

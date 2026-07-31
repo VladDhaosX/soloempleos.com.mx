@@ -4,7 +4,7 @@
   "main": "src/index.mjs",
   "compatibility_date": "2026-07-30",
   "vars": {
-    "R2_PUBLIC_BASE_URL": "https://REEMPLAZAR.r2.dev"
+    "R2_PUBLIC_BASE_URL": "https://pub-7b11ebde930b4011bc3fad46b1a49f92.r2.dev"
   },
   "observability": {
     "enabled": true

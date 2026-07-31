@@ -13,12 +13,12 @@ Rutas publicas:
 
 El Worker rechaza regiones, tipos, nombres y presets no reconocidos. Los parametros de redimensionamiento no vienen de la URL: estan definidos en `src/index.mjs`.
 
-## Configuracion pendiente
+## Configuracion activa
 
-1. Activar R2 y crear `soloempleos-media-prod`.
-2. Habilitar temporalmente la URL publica `r2.dev` del bucket para utilizarla como origen.
-3. Sustituir `R2_PUBLIC_BASE_URL` en `wrangler.jsonc`.
-4. Desplegar con Wrangler o desde el panel de Workers.
-5. Configurar `MEDIA_DELIVERY_BASE_URL` en Hostinger con la URL final `workers.dev`.
+- Bucket: `soloempleos-media-prod`
+- Origen R2: `https://pub-7b11ebde930b4011bc3fad46b1a49f92.r2.dev`
+- Entrega publica: `https://soloempleos-images.deanva08.workers.dev`
+
+En Hostinger, `MEDIA_DELIVERY_BASE_URL` debe apuntar a la URL de entrega publica. Las credenciales S3 de R2 se configuran solamente como variables de entorno del servidor y nunca se guardan en Git.
 
 La URL `r2.dev` se usa solo como origen. El sitio publico debe mostrar las URLs del Worker.

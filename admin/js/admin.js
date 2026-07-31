@@ -160,7 +160,18 @@
     el.textContent = msg || '';
   }
 
-  function mediaUrl(region, type, url, preset = 'admin') {
+  function mediaUrl(region, type, item, preset = 'admin') {
+    const remote = item && typeof item === 'object'
+      ? item.media?.urls?.[preset]
+      : '';
+    for (const candidate of [remote, typeof item === 'object' ? item?.url : item]) {
+      try {
+        const parsed = new URL(String(candidate || ''));
+        if (parsed.protocol === 'https:') return parsed.href;
+      } catch (_) {}
+    }
+
+    const url = typeof item === 'object' ? item?.url : item;
     const filename = String(url || '').split('/').pop();
     if (!filename) return '';
     return `/media/${region}/${type}/${encodeURIComponent(filename)}?preset=${encodeURIComponent(preset)}`;
@@ -241,7 +252,7 @@
       const data = await res.json();
       const img = document.getElementById('portada-preview');
       const ph = document.getElementById('portada-placeholder');
-      img.src = mediaUrl(state.region, 'portadas', data.url, 'cover');
+      img.src = mediaUrl(state.region, 'portadas', data, 'cover');
       img.style.display = 'block';
       img.onerror = () => {
         img.style.display = 'none';
@@ -298,7 +309,7 @@
       const telefono = v.telefono || '';
       return `
       <div class="admin-vacante-item" data-id="${v.id}" data-rotation="${rot}" data-telefono="${escapeAttr(telefono)}">
-        <img src="${mediaUrl(state.region, 'vacantes', v.url, 'admin')}" alt="Vacante" loading="lazy"
+        <img src="${mediaUrl(state.region, 'vacantes', v, 'admin')}" alt="Vacante" loading="lazy"
              style="transform:rotate(${rot}deg)"
              onerror="this.onerror=null;this.style.opacity='.3'">
         <div class="vacante-menu">
@@ -612,7 +623,7 @@
       const rotation = Number(cupon.rotation) || 0;
       return `
         <div class="admin-vacante-item admin-cupon-item" data-id="${escapeAttr(cupon.id)}">
-          <img src="${mediaUrl('gdl', 'cupones', cupon.url, 'admin')}" alt="Cupón" loading="lazy"
+          <img src="${mediaUrl('gdl', 'cupones', cupon, 'admin')}" alt="Cupón" loading="lazy"
                style="transform:rotate(${rotation}deg)" onerror="this.onerror=null;this.style.opacity='.3'">
           <span class="cupon-drag-handle" title="Arrastrar" aria-hidden="true">⠿</span>
           <button class="btn-rotate-cupon" data-id="${escapeAttr(cupon.id)}" type="button" title="Rotar 90°">↻</button>
