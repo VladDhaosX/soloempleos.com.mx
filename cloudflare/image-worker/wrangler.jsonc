@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "soloempleos-images",
   "main": "src/index.mjs",
-  "compatibility_date": "2026-07-30",
+  "compatibility_date": "2026-07-31",
+  "preview_urls": false,
   "vars": {
     "R2_PUBLIC_BASE_URL": "https://pub-7b11ebde930b4011bc3fad46b1a49f92.r2.dev"
   },

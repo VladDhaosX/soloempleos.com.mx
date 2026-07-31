@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import worker, { parseRequestPath } from '../cloudflare/image-worker/src/index.mjs';
+import worker, { PRESETS, parseRequestPath } from '../cloudflare/image-worker/src/index.mjs';
 
 const originalFetch = globalThis.fetch;
 const calls = [];
 
 try {
+  assert.equal(PRESETS.cover.fit, 'scale-down');
   globalThis.fetch = async (url, options) => {
     calls.push({ url: String(url), options });
     return new Response(new Uint8Array([1, 2, 3]), {

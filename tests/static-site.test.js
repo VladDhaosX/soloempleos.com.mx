@@ -51,8 +51,8 @@ try {
   const contacto = fs.readFileSync(path.join(PUBLIC_DIR, 'gdl', 'contacto', 'index.html'), 'utf8');
   const sitemap = fs.readFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), 'utf8');
 
-  assert(root.includes(gdlCover.urls.cover));
-  assert(root.includes(mtyCover.urls.cover));
+  assert(root.includes(`${gdlCover.urls.cover}?v=2`));
+  assert(root.includes(`${mtyCover.urls.cover}?v=2`));
   assert(gdl.includes(gdlMedia.urls.thumb));
   assert(gdl.includes(gdlMedia.urls.full));
   assert(gdl.includes('https://wa.me/523334477077'));

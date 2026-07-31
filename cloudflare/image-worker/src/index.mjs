@@ -1,7 +1,7 @@
 const PRESETS = Object.freeze({
   thumb: Object.freeze({ width: 640, height: 1600, fit: 'scale-down', quality: 68, format: 'auto' }),
   full: Object.freeze({ width: 1200, height: 3000, fit: 'scale-down', quality: 82, format: 'auto' }),
-  cover: Object.freeze({ width: 720, height: 1800, fit: 'cover', quality: 76, format: 'auto' }),
+  cover: Object.freeze({ width: 720, height: 1800, fit: 'scale-down', quality: 76, format: 'auto' }),
   admin: Object.freeze({ width: 480, height: 1200, fit: 'scale-down', quality: 70, format: 'auto' }),
 });
 

@@ -8,6 +8,7 @@ const {
 } = require('../content-paths');
 
 const COUPONS_VISIBLE = false;
+const COVER_TRANSFORM_VERSION = 2; // ponytail: bump only when the immutable cover transform changes.
 const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
 const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
 const PUBLIC_TEMPLATES = Object.freeze([
@@ -210,8 +211,9 @@ function renderPortada(region) {
     Number.isInteger(storedHeight) && storedHeight > 0
     ? { width: storedWidth, height: storedHeight }
     : readImageDimensions(sourcePath);
+  const coverUrl = storedMediaUrl(portada, region, 'portadas', 'cover');
   return {
-    url: storedMediaUrl(portada, region, 'portadas', 'cover'),
+    url: portada.media?.provider === 'r2' ? `${coverUrl}?v=${COVER_TRANSFORM_VERSION}` : coverUrl,
     width: dimensions?.width || 720,
     height: dimensions?.height || 900,
   };
