@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "soloempleos-images",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-07-30",
+  "vars": {
+    "R2_PUBLIC_BASE_URL": "https://REEMPLAZAR.r2.dev"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

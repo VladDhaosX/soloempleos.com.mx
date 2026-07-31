@@ -17,7 +17,7 @@ evidencia-cliente-fase-1/
 storage/
 soloempleos.com.mx-Coverage*/
 transfer-whatsapp-vacantes/
-.env.example
+!.env.example
 CONTENT_DEPLOYMENT.md
 Plan_De_Trabajo_SEO.docx
 Reporte_*.docx
