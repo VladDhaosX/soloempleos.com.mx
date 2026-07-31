@@ -118,7 +118,7 @@ app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio/'));
 app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio/'));
 
 const legacyRedirects = [
-  [/^\/(?:index\.php)?$/i, '/'],
+  [/^\/index\.php$/i, '/'],
   [/^\/wp-content(?:\/.*)?$/i, '/'],
   [/^\/wp-includes(?:\/.*)?$/i, '/'],
   [/^\/wp-json(?:\/.*)?$/i, '/'],

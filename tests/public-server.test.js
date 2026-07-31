@@ -42,7 +42,15 @@ async function run() {
   const base = `http://127.0.0.1:${server.address().port}`;
 
   try {
-    let res = await fetch(`${base}/gdl/inicio/`);
+    let res = await fetch(`${base}/`);
+    assert.equal(res.status, 200);
+    assert((await res.text()).includes('Empleos en Guadalajara y Monterrey'));
+
+    res = await fetch(`${base}/index.html`, { redirect: 'manual' });
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get('location'), '/');
+
+    res = await fetch(`${base}/gdl/inicio/`);
     assert.equal(res.status, 200);
     assert.equal(
       res.headers.get('cache-control'),
