@@ -6,6 +6,7 @@ const unzipper = require('unzipper');
 const requireAuth = require('../middleware/auth');
 const { CONTENT_DIR, REGIONS, contentPath } = require('../content-paths');
 const { scheduleReferencedMediaWarmup } = require('../services/media-variants');
+const { defaultSitePublisher } = require('../services/static-site');
 
 const router = express.Router();
 const RESTORE_ROOTS = new Set(['gdl/data', 'gdl/uploads', 'mty/data', 'mty/uploads']);
@@ -180,8 +181,9 @@ router.post('/backup/restore', requireAuth, upload.single('backup'), async (req,
       fs.writeFileSync(target, await entry.file.buffer());
     }
 
+    const publicSite = defaultSitePublisher.build();
     const mediaJob = scheduleReferencedMediaWarmup('backup restore');
-    res.json({ ok: true, files: files.length, restored: [...roots].sort(), mediaJob });
+    res.json({ ok: true, files: files.length, restored: [...roots].sort(), mediaJob, publicFiles: publicSite.files.length });
   } catch (err) {
     console.error('backup restore error:', err);
     res.status(400).json({ error: err.message || 'No se pudo restaurar el backup' });

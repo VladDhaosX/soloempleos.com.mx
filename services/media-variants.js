@@ -389,23 +389,32 @@ function readJson(filePath, fallback) {
   }
 }
 
+function localMediaFilename(item) {
+  const url = String(item?.url || '');
+  if (!url || item?.media?.provider === 'r2' || /^https?:\/\//i.test(url)) return '';
+  return path.basename(url.split(/[?#]/, 1)[0]);
+}
+
 function referencedMediaItems() {
   const items = [];
   for (const region of REGIONS) {
     const portada = readJson(dataPath(region, 'portada.json'), {});
-    if (portada.url) {
-      items.push({ region, type: 'portadas', filename: path.basename(portada.url) });
+    const portadaFilename = localMediaFilename(portada);
+    if (portadaFilename) {
+      items.push({ region, type: 'portadas', filename: portadaFilename });
     }
 
     const vacantes = readJson(dataPath(region, 'vacantes.json'), []);
     for (const item of Array.isArray(vacantes) ? vacantes : []) {
-      if (item.url) items.push({ region, type: 'vacantes', filename: path.basename(item.url) });
+      const filename = localMediaFilename(item);
+      if (filename) items.push({ region, type: 'vacantes', filename });
     }
   }
 
   const cupones = readJson(dataPath('gdl', 'cupones.json'), []);
   for (const item of Array.isArray(cupones) ? cupones : []) {
-    if (item.url) items.push({ region: 'gdl', type: 'cupones', filename: path.basename(item.url) });
+    const filename = localMediaFilename(item);
+    if (filename) items.push({ region: 'gdl', type: 'cupones', filename });
   }
   return items;
 }

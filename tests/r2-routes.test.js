@@ -73,6 +73,7 @@ async function run() {
     assert.equal(vacante.media.width, 900);
     assert.equal(vacante.media.height, 1200);
     assert.equal(vacante.url, vacante.media.urls.full);
+    assert.equal(Object.hasOwn(vacante, 'rotation'), false);
 
     response = await upload(base, 'portada', 'imagen', image, token);
     assert.equal(response.status, 200);
@@ -83,6 +84,7 @@ async function run() {
     assert.equal(response.status, 200);
     const cupon = await response.json();
     assert.equal(cupon.url, cupon.media.urls.full);
+    assert.equal(Object.hasOwn(cupon, 'rotation'), false);
 
     const headers = { Authorization: `Bearer ${token}` };
     response = await fetch(`${base}/vacantes/${vacante.id}`, { method: 'DELETE', headers });

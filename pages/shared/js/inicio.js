@@ -1,81 +1,4 @@
 (function () {
-  function escapeAttr(value) {
-    return String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  function whatsappHref(telefono) {
-    const digits = String(telefono || '').replace(/\D/g, '');
-    return digits ? `https://wa.me/${digits.length === 10 ? `52${digits}` : digits}` : '';
-  }
-
-  function whatsappButton(telefono) {
-    const href = whatsappHref(telefono);
-    if (!href) return '';
-    return `
-      <a class="vacante-whatsapp" href="${escapeAttr(href)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">
-        <img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">
-      </a>
-    `;
-  }
-
-  function mediaUrl(region, type, url, preset) {
-    const filename = String(url || '').split('/').pop();
-    if (!filename) return '/shared/img/placeholder.svg';
-    return `/media/${region}/${type}/${encodeURIComponent(filename)}?preset=${encodeURIComponent(preset)}`;
-  }
-
-  async function cargarVacantes() {
-    const region = document.body.dataset.region || 'gdl';
-    const type = document.body.dataset.content || 'vacantes';
-    const grid = document.getElementById('vacantes-grid');
-    if (!grid) return;
-    const regionName = region === 'mty' ? 'Monterrey' : 'Guadalajara';
-
-    if (grid.dataset.ssr === type && grid.querySelector('.vacante-item')) {
-      requestAnimationFrame(() => grid.classList.add('is-ready'));
-      return;
-    }
-
-    try {
-      const res = await fetch(`/${region}/data/${type}.json`);
-      if (!res.ok) throw new Error('fetch failed');
-      const data = await res.json();
-
-      if (!Array.isArray(data) || data.length === 0) {
-        grid.innerHTML = `<p class="vacantes-empty">No hay ${type === 'cupones' ? 'cupones' : 'vacantes'} disponibles</p>`;
-        return;
-      }
-
-      const MIN_CELLS = type === 'cupones' ? 0 : 8;
-      const items = data.map(v => `
-        <div class="vacante-item">
-          <img
-            src="${escapeAttr(mediaUrl(region, type, v.url, 'thumb'))}"
-            data-full-src="${escapeAttr(mediaUrl(region, type, v.url, 'full'))}"
-            alt="${escapeAttr(type === 'cupones' ? `Cupón de empleo en ${regionName}` : (v.fecha ? `Vacante de empleo en ${regionName} publicada el ${v.fecha} en Solo Empleos` : `Vacante de empleo en ${regionName} en Solo Empleos`))}"
-            width="3366"
-            height="4134"
-            loading="${type === 'cupones' ? 'eager' : 'lazy'}"
-            decoding="async"
-            onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'"
-          >
-          ${type === 'vacantes' ? whatsappButton(v.telefono) : ''}
-        </div>
-      `).join('');
-      const empty = data.length < MIN_CELLS
-        ? Array(MIN_CELLS - data.length).fill('<div class="vacante-item vacante-empty"></div>').join('')
-        : '';
-      grid.innerHTML = items + empty;
-      requestAnimationFrame(() => grid.classList.add('is-ready'));
-    } catch (_) {
-      grid.innerHTML = `<p class="vacantes-empty">No hay ${type === 'cupones' ? 'cupones' : 'vacantes'} disponibles</p>`;
-    }
-  }
-
   function initModal() {
     const grid = document.getElementById('vacantes-grid');
     if (!grid) return;
@@ -143,7 +66,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    cargarVacantes();
+    const grid = document.getElementById('vacantes-grid');
+    if (grid) requestAnimationFrame(() => grid.classList.add('is-ready'));
     initModal();
   });
 })();

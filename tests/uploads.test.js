@@ -57,6 +57,11 @@ async function run() {
     vacanteForm.append('imagen', new Blob([jpeg], { type: 'image/jpeg' }), 'vacante.jpg');
     res = await fetch(`${base}/vacantes`, { method: 'POST', headers, body: vacanteForm });
     assert.equal(res.status, 200);
+    const vacante = await res.json();
+    assert.equal(Object.hasOwn(vacante, 'rotation'), false);
+
+    res = await fetch(`${base}/vacantes/${vacante.id}/rotate`, { method: 'PUT', headers });
+    assert.equal(res.status, 404);
 
     const vacantesDir = path.join(tempDir, 'gdl', 'uploads', 'vacantes');
     assert.equal(sourceFiles(vacantesDir).length, 1);

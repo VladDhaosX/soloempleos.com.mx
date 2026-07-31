@@ -92,9 +92,20 @@ async function run() {
     assert.equal(mediaService.queueStats().active, 0);
     assert.equal(mediaService.queueStats().pending, 0);
 
+    const dataDir = path.join(tempDir, 'gdl', 'data');
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'vacantes.json'), JSON.stringify([
+      { url: '/gdl/uploads/vacantes/sample.jpg' },
+      {
+        url: 'https://soloempleos-images.example.workers.dev/full/gdl/vacantes/remota.jpg',
+        media: { provider: 'r2' },
+      },
+    ]));
+
     const firstWarmup = mediaService.scheduleReferencedMediaWarmup('lock test');
     const duplicateWarmup = mediaService.scheduleReferencedMediaWarmup('lock test duplicate');
     assert.equal(firstWarmup.sharedLock, true);
+    assert.equal(firstWarmup.files, 1);
     assert.equal(duplicateWarmup.skipped, 'shared-lock-active');
     await mediaService.waitForBackgroundWork();
     assert.equal(fs.existsSync(path.join(tempDir, '.media-prewarm.lock')), false);

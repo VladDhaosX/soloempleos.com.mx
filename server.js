@@ -3,12 +3,11 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
-const fs = require('fs');
-const { ADMIN_DIR, PAGES_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
+const { ADMIN_DIR, PAGES_DIR, PUBLIC_DIR, REGIONS, dataPath, uploadsPath } = require('./content-paths');
 const { scheduleReferencedMediaWarmup } = require('./services/media-variants');
+const { COUPONS_VISIBLE, defaultSitePublisher } = require('./services/static-site');
 
 const app = express();
-const COUPONS_VISIBLE = false;
 
 app.use(cors());
 app.use(compression());
@@ -82,13 +81,6 @@ app.use((req, res, next) => {
   next();
 });
 
-const HEADER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'header.html');
-const FOOTER_FRAGMENT = path.join(PAGES_DIR, 'shared', 'footer.html');
-
-function readFragment(p) {
-  try { return fs.readFileSync(p, 'utf8'); } catch (_) { return ''; }
-}
-
 function setPageAssetHeaders(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.xml' || ext === '.txt') {
@@ -104,6 +96,16 @@ function setPageAssetHeaders(res, filePath) {
   }
 }
 
+function setGeneratedPageHeaders(res, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.html') {
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+  } else if (ext === '.xml') {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+  }
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+}
+
 function setUploadHeaders(res) {
   res.setHeader('Cache-Control', 'public, max-age=604800');
 }
@@ -112,345 +114,8 @@ function setDataHeaders(res) {
   res.setHeader('Cache-Control', 'no-cache');
 }
 
-function escapeXml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-function newestDate(paths) {
-  const times = paths
-    .map(p => {
-      try {
-        return fs.statSync(p).mtimeMs;
-      } catch (_) {
-        return 0;
-      }
-    })
-    .filter(Boolean);
-
-  const newest = times.length ? Math.max(...times) : Date.now();
-  return new Date(newest).toISOString().slice(0, 10);
-}
-
-function readImageDimensions(filePath) {
-  try {
-    const stat = fs.statSync(filePath);
-    const fd = fs.openSync(filePath, 'r');
-    const buffer = Buffer.alloc(Math.min(stat.size, 64 * 1024));
-    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
-    fs.closeSync(fd);
-    const data = buffer.subarray(0, bytesRead);
-
-    if (data.length >= 24 && data.toString('ascii', 1, 4) === 'PNG') {
-      return {
-        width: data.readUInt32BE(16),
-        height: data.readUInt32BE(20),
-      };
-    }
-
-    if (data.length >= 4 && data[0] === 0xff && data[1] === 0xd8) {
-      let offset = 2;
-      while (offset + 9 < data.length) {
-        if (data[offset] !== 0xff) break;
-        const marker = data[offset + 1];
-        const length = data.readUInt16BE(offset + 2);
-        if (length < 2) break;
-        if (
-          marker >= 0xc0 &&
-          marker <= 0xcf &&
-          ![0xc4, 0xc8, 0xcc].includes(marker)
-        ) {
-          return {
-            width: data.readUInt16BE(offset + 7),
-            height: data.readUInt16BE(offset + 5),
-          };
-        }
-        offset += 2 + length;
-      }
-    }
-  } catch (_) {
-    return null;
-  }
-  return null;
-}
-
-function imageDimensionAttrs(filePath) {
-  const dimensions = readImageDimensions(filePath);
-  return dimensions
-    ? ` width="${dimensions.width}" height="${dimensions.height}"`
-    : '';
-}
-
-function safeHttpsUrl(value) {
-  try {
-    const url = new URL(String(value || ''));
-    return url.protocol === 'https:' ? url.href : '';
-  } catch (_) {
-    return '';
-  }
-}
-
-function storedMediaUrl(item, region, type, preset) {
-  const remotePreset = safeHttpsUrl(item?.media?.urls?.[preset]);
-  if (remotePreset) return remotePreset;
-
-  const remoteFallback = safeHttpsUrl(item?.url);
-  if (remoteFallback) return remoteFallback;
-
-  const filename = path.basename(String(item?.url || ''));
-  return filename
-    ? `/media/${region}/${type}/${encodeURIComponent(filename)}?preset=${encodeURIComponent(preset)}`
-    : '';
-}
-
-function storedImageDimensionAttrs(item, filePath) {
-  const width = Number(item?.media?.width);
-  const height = Number(item?.media?.height);
-  if (Number.isInteger(width) && width > 0 && Number.isInteger(height) && height > 0) {
-    return ` width="${width}" height="${height}"`;
-  }
-  return imageDimensionAttrs(filePath);
-}
-
-function sitemapEntry(loc, priority, paths) {
-  return `  <url>
-    <loc>${escapeXml(loc)}</loc>
-    <lastmod>${newestDate(paths)}</lastmod>
-    <priority>${priority}</priority>
-  </url>`;
-}
-
-function renderSitemapXml() {
-  const entries = [
-    sitemapEntry('https://soloempleos.com.mx/', '1.0', [
-      path.join(PAGES_DIR, 'index.html'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/inicio/', '0.9', [
-      path.join(PAGES_DIR, 'gdl', 'inicio', 'index.html'),
-      dataPath('gdl', 'vacantes.json'),
-      dataPath('gdl', 'portada.json'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/mty/inicio/', '0.9', [
-      path.join(PAGES_DIR, 'mty', 'inicio', 'index.html'),
-      dataPath('mty', 'vacantes.json'),
-      dataPath('mty', 'portada.json'),
-    ]),
-    ...(COUPONS_VISIBLE ? [
-      sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', [
-        path.join(PAGES_DIR, 'gdl', 'cupones', 'index.html'),
-        dataPath('gdl', 'cupones.json'),
-      ]),
-    ] : []),
-    sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7', [
-      path.join(PAGES_DIR, 'gdl', 'guia-empleo', 'index.html'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/mty/guia-empleo/', '0.7', [
-      path.join(PAGES_DIR, 'mty', 'guia-empleo', 'index.html'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/contacto/', '0.6', [
-      path.join(PAGES_DIR, 'gdl', 'contacto', 'index.html'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/mty/contacto/', '0.6', [
-      path.join(PAGES_DIR, 'mty', 'contacto', 'index.html'),
-    ]),
-  ];
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.join('\n')}
-</urlset>
-`;
-}
-
-function adjustFragmentForRegion(fragment, region) {
-  if (!region) return fragment;
-  if (region !== 'gdl') {
-    fragment = fragment.replace(/<a\b[^>]*data-gdl-only[^>]*>[\s\S]*?<\/a>/g, '');
-  }
-
-  return fragment
-    .replace(/<a\b[^>]*>/g, tag => {
-      let updated = tag;
-      const regionHref = updated.match(/data-region-href="([^"]*)"/);
-      if (regionHref) {
-        const adjusted = regionHref[1].replace(/\/(gdl|mty)\//g, `/${region}/`);
-        updated = updated.includes(' href=')
-          ? updated.replace(/href="[^"]*"/, `href="${adjusted}"`)
-          : updated.replace('<a ', `<a href="${adjusted}" `);
-      }
-
-      if (updated.includes('data-region-ofertas=')) {
-        updated = updated.replace(/href="[^"]*"/, `href="https://soloofertas.com/${region}/"`);
-        updated = updated.replace(/data-region-ofertas="(?:gdl|mty)"/, `data-region-ofertas="${region}"`);
-      }
-
-      const regionLink = updated.match(/data-region-link="([^"]*)"/);
-      if (regionLink) {
-        updated = updated.replace(/\sclass="active"/, '');
-        if (regionLink[1] === region) {
-          updated = updated.includes(' class=')
-            ? updated.replace(/class="([^"]*)"/, (_, classes) => `class="${classes} active"`)
-            : updated.replace('<a ', '<a class="active" ');
-        }
-      }
-
-      return updated;
-    })
-    .replace(/src="\/shared\/img\/logo-(?:gdl|mty)\.jpg"/g, `src="/shared/img/logo-${region}.jpg"`);
-}
-
-function injectFragments(html, region) {
-  const header = adjustFragmentForRegion(readFragment(HEADER_FRAGMENT), region);
-  const footer = adjustFragmentForRegion(readFragment(FOOTER_FRAGMENT), region);
-
-  return html
-    .replace('<div id="header-placeholder"></div>', header)
-    .replace('<div id="footer-placeholder"></div>', footer);
-}
-
-function renderVacantes(region) {
-  const file = dataPath(region, 'vacantes.json');
-  let data;
-  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
-  if (!Array.isArray(data) || data.length === 0) {
-    return '<p class="vacantes-empty">No hay vacantes disponibles</p>';
-  }
-  const MIN_CELLS = 8;
-  const esc = s => String(s).replace(/"/g, '&quot;');
-  const regionName = region === 'gdl' ? 'Guadalajara' : 'Monterrey';
-  const vacancyAlt = v => {
-    const fecha = v.fecha ? ` publicada el ${v.fecha}` : '';
-    return `Vacante de empleo en ${regionName}${fecha} en Solo Empleos`;
-  };
-  const waHref = telefono => {
-    const digits = String(telefono || '').replace(/\D/g, '');
-    return digits ? `https://wa.me/${digits.length === 10 ? `52${digits}` : digits}` : '';
-  };
-  const items = data.map(v => {
-    const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
-    const whatsappUrl = waHref(v.telefono);
-    const sourcePath = uploadsPath(region, 'vacantes', path.basename(v.url));
-    const thumbUrl = storedMediaUrl(v, region, 'vacantes', 'thumb');
-    const fullUrl = storedMediaUrl(v, region, 'vacantes', 'full');
-    const contact = whatsappUrl
-      ? `<a class="vacante-whatsapp" href="${esc(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Contactanos por WhatsApp" data-tooltip="Contactanos">` +
-          `<img src="/shared/img/whatsapp.svg" alt="" aria-hidden="true">` +
-        `</a>`
-      : '';
-    return `<div class="vacante-item">` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="${esc(vacancyAlt(v))}"${storedImageDimensionAttrs(v, sourcePath)} loading="lazy" decoding="async"${rot} ` +
-      `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
-      contact +
-    `</div>`;
-  }).join('');
-  const empty = data.length < MIN_CELLS
-    ? '<div class="vacante-item vacante-empty"></div>'.repeat(MIN_CELLS - data.length)
-    : '';
-  return items + empty;
-}
-
-function injectVacantes(html, region) {
-  if (!region) return html;
-  return html.replace('<!-- SSR:VACANTES -->', renderVacantes(region));
-}
-
-function renderCupones() {
-  if (!COUPONS_VISIBLE) return '';
-
-  const file = dataPath('gdl', 'cupones.json');
-  let data;
-  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return ''; }
-  if (!Array.isArray(data) || data.length === 0) {
-    return '<p class="vacantes-empty">No hay cupones disponibles</p>';
-  }
-
-  const esc = s => String(s).replace(/"/g, '&quot;');
-  return data.map(v => {
-    const rot = v.rotation ? ` style="transform:rotate(${Number(v.rotation)}deg)"` : '';
-    const sourcePath = uploadsPath('gdl', 'cupones', path.basename(v.url));
-    const thumbUrl = storedMediaUrl(v, 'gdl', 'cupones', 'thumb');
-    const fullUrl = storedMediaUrl(v, 'gdl', 'cupones', 'full');
-    return `<div class="vacante-item" data-cupon>` +
-      `<img src="${esc(thumbUrl)}" data-full-src="${esc(fullUrl)}" alt="Cupón de empleo en Guadalajara"${storedImageDimensionAttrs(v, sourcePath)} loading="eager" decoding="async"${rot} ` +
-      `onerror="this.onerror=null;this.src='/shared/img/placeholder.svg'">` +
-    `</div>`;
-  }).join('');
-}
-
-function injectCupones(html) {
-  if (!html.includes('<!-- SSR:CUPONES -->')) return html;
-  return html.replace('<!-- SSR:CUPONES -->', renderCupones());
-}
-
-function renderPortada(region) {
-  const file = dataPath(region, 'portada.json');
-  try {
-    const portada = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!portada.url) {
-      return { url: '/shared/img/placeholder.svg', width: '400', height: '300' };
-    }
-    const rawFilename = path.basename(portada.url);
-    const sourcePath = uploadsPath(region, 'portadas', rawFilename);
-    const storedWidth = Number(portada.media?.width);
-    const storedHeight = Number(portada.media?.height);
-    const dimensions = Number.isInteger(storedWidth) && storedWidth > 0 &&
-      Number.isInteger(storedHeight) && storedHeight > 0
-      ? { width: storedWidth, height: storedHeight }
-      : readImageDimensions(sourcePath);
-    return {
-      url: storedMediaUrl(portada, region, 'portadas', 'cover'),
-      width: String(dimensions ? dimensions.width : 720),
-      height: String(dimensions ? dimensions.height : 900),
-    };
-  } catch (_) {
-    return { url: '/shared/img/placeholder.svg', width: '400', height: '300' };
-  }
-}
-
-function injectPortadas(html) {
-  if (!html.includes('__SSR_PORTADA_')) return html;
-  const gdl = renderPortada('gdl');
-  const mty = renderPortada('mty');
-  return html
-    .replace('__SSR_PORTADA_GDL__', gdl.url)
-    .replace('__SSR_PORTADA_GDL_WIDTH__', gdl.width)
-    .replace('__SSR_PORTADA_GDL_HEIGHT__', gdl.height)
-    .replace('__SSR_PORTADA_MTY__', mty.url)
-    .replace('__SSR_PORTADA_MTY_WIDTH__', mty.width)
-    .replace('__SSR_PORTADA_MTY_HEIGHT__', mty.height);
-}
-
-app.use((req, res, next) => {
-  let urlPath = decodeURIComponent(req.path);
-  if (urlPath.endsWith('/')) urlPath += 'index.html';
-  if (!urlPath.endsWith('.html')) return next();
-
-  const filePath = path.join(PAGES_DIR, urlPath);
-  if (!filePath.startsWith(PAGES_DIR)) return next();
-
-  const regionMatch = urlPath.match(/^\/(gdl|mty)\//);
-  const region = regionMatch ? regionMatch[1] : null;
-
-  fs.readFile(filePath, 'utf8', (err, html) => {
-    if (err) return next();
-    res.set('Content-Type', 'text/html; charset=utf-8');
-    res.set('Cache-Control', 'no-cache');
-    res.send(injectPortadas(injectCupones(injectVacantes(injectFragments(html, region), region))));
-  });
-});
-
 app.get('/gdl', (req, res) => res.redirect(301, '/gdl/inicio/'));
 app.get('/mty', (req, res) => res.redirect(301, '/mty/inicio/'));
-
-app.get('/sitemap.xml', (req, res) => {
-  res.set('Content-Type', 'application/xml; charset=utf-8');
-  res.set('Cache-Control', 'public, max-age=300');
-  res.send(renderSitemapXml());
-});
 
 const legacyRedirects = [
   [/^\/(?:index\.php)?$/i, '/'],
@@ -516,6 +181,7 @@ for (const region of REGIONS) {
   }
 }
 app.use(require('./routes/media'));
+app.use(express.static(PUBLIC_DIR, { setHeaders: setGeneratedPageHeaders }));
 app.use(express.static(PAGES_DIR, { setHeaders: setPageAssetHeaders }));
 
 // Routes
@@ -533,9 +199,21 @@ app.use('/soloempleos', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Solo Empleos API corriendo en puerto ${PORT}`);
-  const mediaJob = scheduleReferencedMediaWarmup('startup');
-  console.log('media prewarm scheduled:', mediaJob);
-});
+function startServer(port = process.env.PORT || 3000, host) {
+  const publicSite = defaultSitePublisher.build();
+  console.log(`public site generated: ${publicSite.files.length} files`);
+
+  const onListening = () => {
+    console.log(`Solo Empleos API corriendo en puerto ${port}`);
+    const mediaJob = scheduleReferencedMediaWarmup('startup');
+    console.log('media prewarm scheduled:', mediaJob);
+  };
+
+  return host
+    ? app.listen(port, host, onListening)
+    : app.listen(port, onListening);
+}
+
+if (require.main === module) startServer();
+
+module.exports = { app, startServer };

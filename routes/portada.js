@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const requireAuth = require('../middleware/auth');
 const { dataPath, uploadsPath } = require('../content-paths');
 const { createMediaStore } = require('../services/media-store');
+const { defaultSitePublisher } = require('../services/static-site');
 const {
   MIME_FORMATS,
   InvalidImageError,
@@ -20,6 +21,7 @@ module.exports = function (region, options = {}) {
   const router = express.Router();
   const uploadDir = uploadsPath(region, 'portadas');
   const mediaStore = options.mediaStore || createMediaStore();
+  const sitePublisher = options.sitePublisher || defaultSitePublisher;
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -61,8 +63,7 @@ module.exports = function (region, options = {}) {
 
       const version = path.parse(req.file.filename).name;
       const url = mediaStore.publicUrl(media, 'portadas') || `/${region}/uploads/portadas/${req.file.filename}`;
-      fs.mkdirSync(path.dirname(jsonPath), { recursive: true });
-      fs.writeFileSync(jsonPath, JSON.stringify({ url, version, ...(media ? { media } : {}) }, null, 2));
+      sitePublisher.writeJson(jsonPath, { url, version, ...(media ? { media } : {}) });
 
       if (previous.url && previous.url !== url) {
         try {

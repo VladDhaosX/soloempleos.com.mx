@@ -34,6 +34,7 @@ async function run() {
     let res = await fetch(`${base}/cupones`, { method: 'POST', headers, body: form });
     assert.equal(res.status, 200);
     const created = await res.json();
+    assert.equal(Object.hasOwn(created, 'rotation'), false);
 
     const uploadDir = path.join(tempDir, 'gdl', 'uploads', 'cupones');
     assert.equal(fs.readdirSync(path.join(uploadDir, '.cache')).filter(name => name.endsWith('.webp')).length, 3);
@@ -44,8 +45,7 @@ async function run() {
     assert.equal(res.status, 400);
 
     res = await fetch(`${base}/cupones/${created.id}/rotate`, { method: 'PUT', headers });
-    assert.equal(res.status, 200);
-    assert.equal((await res.json()).rotation, 90);
+    assert.equal(res.status, 404);
 
     res = await fetch(`${base}/cupones/reorder`, {
       method: 'PUT',
@@ -71,7 +71,7 @@ async function run() {
 
     const saved = JSON.parse(fs.readFileSync(path.join(tempDir, 'gdl', 'data', 'cupones.json'), 'utf8'));
     assert.deepEqual(saved, []);
-    console.log('Cupones API: validacion, precalculo, replace-all, rotate, reorder y delete OK');
+    console.log('Cupones API: validacion, precalculo, replace-all, reorder y delete sin rotacion OK');
   } finally {
     await new Promise(resolve => server.close(resolve));
     if (path.resolve(tempDir).startsWith(`${path.resolve(os.tmpdir())}${path.sep}`)) {

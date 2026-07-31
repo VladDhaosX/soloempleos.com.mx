@@ -6,6 +6,7 @@ const ADMIN_DIR = path.join(APP_ROOT, 'admin');
 const CONTENT_DIR = process.env.CONTENT_DIR
   ? path.resolve(APP_ROOT, process.env.CONTENT_DIR)
   : path.join(APP_ROOT, 'storage');
+const PUBLIC_DIR = path.join(CONTENT_DIR, 'public');
 const REGIONS = ['gdl', 'mty'];
 
 function contentPath(...parts) {
@@ -25,6 +26,7 @@ module.exports = {
   APP_ROOT,
   CONTENT_DIR,
   PAGES_DIR,
+  PUBLIC_DIR,
   REGIONS,
   contentPath,
   dataPath,

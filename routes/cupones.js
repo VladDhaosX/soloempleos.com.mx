@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const requireAuth = require('../middleware/auth');
 const { dataPath, uploadsPath } = require('../content-paths');
 const { createMediaStore } = require('../services/media-store');
+const { defaultSitePublisher } = require('../services/static-site');
 const {
   MIME_FORMATS,
   InvalidImageError,
@@ -22,6 +23,7 @@ module.exports = function (region, options = {}) {
   const uploadDir = uploadsPath(region, 'cupones');
   const jsonPath = dataPath(region, 'cupones.json');
   const mediaStore = options.mediaStore || createMediaStore();
+  const sitePublisher = options.sitePublisher || defaultSitePublisher;
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -54,8 +56,8 @@ module.exports = function (region, options = {}) {
   }
 
   function writeCupones(data) {
-    fs.mkdirSync(path.dirname(jsonPath), { recursive: true });
-    fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2));
+    const withoutRotation = data.map(({ rotation, ...item }) => item);
+    sitePublisher.writeJson(jsonPath, withoutRotation);
   }
 
   function newCupon(file, media = null) {
@@ -63,7 +65,6 @@ module.exports = function (region, options = {}) {
       id: randomUUID(),
       url: mediaStore.publicUrl(media, 'cupones') || `/${region}/uploads/cupones/${file.filename}`,
       fecha: new Date().toISOString().slice(0, 10),
-      rotation: 0,
       ...(media ? { media } : {}),
     };
   }
@@ -154,20 +155,6 @@ module.exports = function (region, options = {}) {
       res.json({ ok: true });
     } catch (err) {
       console.error('cupones reorder error:', err);
-      res.status(500).json({ error: 'Error interno' });
-    }
-  });
-
-  router.put('/cupones/:id/rotate', requireAuth, (req, res) => {
-    try {
-      const lista = readCupones();
-      const item = lista.find(cupon => cupon.id === req.params.id);
-      if (!item) return res.status(404).json({ error: 'Cupon no encontrado' });
-      item.rotation = ((item.rotation || 0) + 90) % 360;
-      writeCupones(lista);
-      res.json({ ok: true, rotation: item.rotation });
-    } catch (err) {
-      console.error('cupones rotate error:', err);
       res.status(500).json({ error: 'Error interno' });
     }
   });

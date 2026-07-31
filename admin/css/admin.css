@@ -368,14 +368,6 @@ button[type="submit"]:disabled {
   display: block;
 }
 
-.btn-rotate-vacante {
-  display: none;
-}
-
-.admin-vacante-item img {
-  transition: transform 0.3s ease;
-}
-
 .btn-delete-vacante {
   position: absolute;
   top: 4px;
@@ -536,7 +528,6 @@ button[type="submit"]:disabled {
 }
 
 .cupon-drag-handle,
-.btn-rotate-cupon,
 .btn-delete-cupon {
   position: absolute;
   bottom: 7px;
@@ -557,16 +548,11 @@ button[type="submit"]:disabled {
   letter-spacing: 1px;
 }
 
-.btn-rotate-cupon,
 .btn-delete-cupon {
   background: #252525;
   cursor: pointer;
   font-size: 0.9rem;
   width: 28px;
-}
-
-.btn-rotate-cupon {
-  right: 41px;
 }
 
 .btn-delete-cupon {
