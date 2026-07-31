@@ -1,4 +1,5 @@
 (function () {
+  const COVER_TRANSFORM_VERSION = 2; // ponytail: keep in sync with services/static-site.js.
   const state = {
     token: localStorage.getItem('se_token'),
     region: 'gdl',
@@ -167,7 +168,12 @@
     for (const candidate of [remote, typeof item === 'object' ? item?.url : item]) {
       try {
         const parsed = new URL(String(candidate || ''));
-        if (parsed.protocol === 'https:') return parsed.href;
+        if (parsed.protocol === 'https:') {
+          if (type === 'portadas' && preset === 'cover') {
+            parsed.searchParams.set('v', COVER_TRANSFORM_VERSION);
+          }
+          return parsed.href;
+        }
       } catch (_) {}
     }
 

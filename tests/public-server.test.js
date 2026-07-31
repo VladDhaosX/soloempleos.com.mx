@@ -65,6 +65,12 @@ async function run() {
     assert.match(res.headers.get('content-type') || '', /xml/);
     assert((await res.text()).includes('https://soloempleos.com.mx/gdl/inicio/'));
 
+    res = await fetch(`${base}/admin/js/admin.js`);
+    assert.equal(res.status, 200);
+    const adminJs = await res.text();
+    assert(adminJs.includes('const COVER_TRANSFORM_VERSION = 2'));
+    assert(adminJs.includes("parsed.searchParams.set('v', COVER_TRANSFORM_VERSION)"));
+
     res = await fetch(`${base}/gdl`, { redirect: 'manual' });
     assert.equal(res.status, 301);
     assert.equal(res.headers.get('location'), '/gdl/inicio/');
