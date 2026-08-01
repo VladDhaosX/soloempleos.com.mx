@@ -1,5 +1,4 @@
 User-agent: *
-Disallow: /admin/
 Allow: /
 
 Sitemap: https://soloempleos.com.mx/sitemap.xml

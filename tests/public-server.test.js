@@ -44,7 +44,7 @@ async function run() {
   try {
     let res = await fetch(`${base}/`);
     assert.equal(res.status, 200);
-    assert((await res.text()).includes('Empleos en Guadalajara y Monterrey'));
+    assert((await res.text()).includes('Vacantes en Guadalajara y Monterrey'));
 
     res = await fetch(`${base}/index.html`, { redirect: 'manual' });
     assert.equal(res.status, 301);
@@ -58,12 +58,28 @@ async function run() {
     );
     const html = await res.text();
     assert(html.includes(`${workerBase}/thumb/${key}`));
+    assert(!html.includes('employment-summary'));
+    assert(!html.includes('href="/admin/"'));
     assert(!/SSR:|header-placeholder|footer-placeholder/.test(html));
 
     res = await fetch(`${base}/sitemap.xml`);
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') || '', /xml/);
-    assert((await res.text()).includes('https://soloempleos.com.mx/gdl/inicio/'));
+    const sitemap = await res.text();
+    assert(sitemap.includes('https://soloempleos.com.mx/gdl/inicio/'));
+    assert(sitemap.includes('<lastmod>2026-07-31</lastmod>'));
+    assert(!sitemap.includes('https://soloempleos.com.mx/gdl/cupones/'));
+
+    res = await fetch(`${base}/robots.txt`);
+    assert.equal(res.status, 200);
+    const robots = await res.text();
+    assert(robots.includes('Allow: /'));
+    assert(!robots.includes('Disallow: /admin/'));
+
+    res = await fetch(`${base}/admin/`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert((await res.text()).includes('<meta name="robots" content="noindex, nofollow">'));
 
     res = await fetch(`${base}/admin/js/admin.js`);
     assert.equal(res.status, 200);
@@ -74,6 +90,30 @@ async function run() {
     res = await fetch(`${base}/gdl`, { redirect: 'manual' });
     assert.equal(res.status, 301);
     assert.equal(res.headers.get('location'), '/gdl/inicio/');
+
+    res = await fetch(`${base}/gdl/cupones/`, { redirect: 'manual' });
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get('location'), '/gdl/inicio/');
+
+    res = await fetch(`${base}/gdl/home-2/`, { redirect: 'manual' });
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get('location'), '/gdl/inicio/');
+
+    for (const legacyPath of [
+      '/gdl/2025/08/29/articulo-retirado/',
+      '/mty/wp-content/plugins/essential-blocks/plugin.php',
+      '/gdl/wp-admin/admin-ajax.php',
+      '/wp-login.php',
+      '/xmlrpc.php',
+    ]) {
+      res = await fetch(`${base}${legacyPath}`, { redirect: 'manual' });
+      assert.equal(res.status, 410);
+      assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow');
+    }
+
+    res = await fetch(`${base}/?custom-css=c3034b02eb`, { redirect: 'manual' });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow');
 
     console.log('Public server: HTML estatico, cache, sitemap y redirecciones OK');
   } finally {

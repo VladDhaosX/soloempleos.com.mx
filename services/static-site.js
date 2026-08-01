@@ -248,44 +248,57 @@ function renderTemplate(relativePath) {
   return html;
 }
 
-function newestDate(paths) {
-  const times = paths.map(filePath => {
-    try {
-      return fs.statSync(filePath).mtimeMs;
-    } catch (_) {
-      return 0;
-    }
-  }).filter(Boolean);
-  return new Date(times.length ? Math.max(...times) : Date.now()).toISOString().slice(0, 10);
+function normalizedContentDate(value) {
+  const text = String(value || '');
+  const isoDate = text.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoDate) return isoDate[1];
+
+  const epoch = text.match(/^(\d{13})(?:-|$)/);
+  if (!epoch) return '';
+  const date = new Date(Number(epoch[1]));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
 }
 
-function sitemapEntry(url, priority, paths) {
-  return `  <url>\n    <loc>${escapeXml(url)}</loc>\n    <lastmod>${newestDate(paths)}</lastmod>\n    <priority>${priority}</priority>\n  </url>`;
+function latestContentDate(values) {
+  return values.map(normalizedContentDate).filter(Boolean).sort().pop() || '';
+}
+
+function regionalLastmod(region) {
+  const vacancies = readJson(dataPath(region, 'vacantes.json'), []);
+  const cover = readJson(dataPath(region, 'portada.json'), {});
+  const values = [
+    ...(Array.isArray(vacancies) ? vacancies.map(item => item.fecha) : []),
+    cover.version,
+  ];
+  if (region === 'gdl' && COUPONS_VISIBLE) {
+    const coupons = readJson(dataPath('gdl', 'cupones.json'), []);
+    if (Array.isArray(coupons)) values.push(...coupons.map(item => item.fecha));
+  }
+  return latestContentDate(values);
+}
+
+function sitemapEntry(url, priority, lastmod = '') {
+  const lastmodLine = lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : '';
+  return `  <url>\n    <loc>${escapeXml(url)}</loc>${lastmodLine}\n    <priority>${priority}</priority>\n  </url>`;
 }
 
 function renderSitemapXml() {
+  const gdlLastmod = regionalLastmod('gdl');
+  const mtyLastmod = regionalLastmod('mty');
+  const gdlCover = readJson(dataPath('gdl', 'portada.json'), {});
+  const mtyCover = readJson(dataPath('mty', 'portada.json'), {});
+  const rootLastmod = latestContentDate([gdlCover.version, mtyCover.version]);
   const entries = [
-    sitemapEntry('https://soloempleos.com.mx/', '1.0', [path.join(PAGES_DIR, 'index.html')]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/inicio/', '0.9', [
-      path.join(PAGES_DIR, 'gdl', 'inicio', 'index.html'),
-      dataPath('gdl', 'vacantes.json'),
-      dataPath('gdl', 'portada.json'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/mty/inicio/', '0.9', [
-      path.join(PAGES_DIR, 'mty', 'inicio', 'index.html'),
-      dataPath('mty', 'vacantes.json'),
-      dataPath('mty', 'portada.json'),
-    ]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7', [path.join(PAGES_DIR, 'gdl', 'guia-empleo', 'index.html')]),
-    sitemapEntry('https://soloempleos.com.mx/mty/guia-empleo/', '0.7', [path.join(PAGES_DIR, 'mty', 'guia-empleo', 'index.html')]),
-    sitemapEntry('https://soloempleos.com.mx/gdl/contacto/', '0.6', [path.join(PAGES_DIR, 'gdl', 'contacto', 'index.html')]),
-    sitemapEntry('https://soloempleos.com.mx/mty/contacto/', '0.6', [path.join(PAGES_DIR, 'mty', 'contacto', 'index.html')]),
+    sitemapEntry('https://soloempleos.com.mx/', '1.0', rootLastmod),
+    sitemapEntry('https://soloempleos.com.mx/gdl/inicio/', '0.9', gdlLastmod),
+    sitemapEntry('https://soloempleos.com.mx/mty/inicio/', '0.9', mtyLastmod),
+    sitemapEntry('https://soloempleos.com.mx/gdl/guia-empleo/', '0.7'),
+    sitemapEntry('https://soloempleos.com.mx/mty/guia-empleo/', '0.7'),
+    sitemapEntry('https://soloempleos.com.mx/gdl/contacto/', '0.6'),
+    sitemapEntry('https://soloempleos.com.mx/mty/contacto/', '0.6'),
   ];
   if (COUPONS_VISIBLE) {
-    entries.splice(3, 0, sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', [
-      path.join(PAGES_DIR, 'gdl', 'cupones', 'index.html'),
-      dataPath('gdl', 'cupones.json'),
-    ]));
+    entries.splice(3, 0, sitemapEntry('https://soloempleos.com.mx/gdl/cupones/', '0.8', gdlLastmod));
   }
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
 }

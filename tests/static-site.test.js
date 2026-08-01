@@ -57,10 +57,15 @@ try {
   assert(gdl.includes(gdlMedia.urls.full));
   assert(gdl.includes('https://wa.me/523334477077'));
   assert(gdl.includes('width="900" height="1200"'));
+  assert(!gdl.includes('employment-summary'));
+  assert(!gdl.includes('href="/admin/"'));
   assert(mty.includes('No hay vacantes disponibles'));
   assert(contacto.includes('<header'));
   assert(contacto.includes('<footer'));
   assert(sitemap.includes('https://soloempleos.com.mx/gdl/inicio/'));
+  assert(sitemap.includes('<lastmod>2026-07-31</lastmod>'));
+  assert(!sitemap.includes('https://soloempleos.com.mx/gdl/cupones/'));
+  assert(!/<loc>https:\/\/soloempleos\.com\.mx\/gdl\/guia-empleo\/<\/loc>\s*<lastmod>/.test(sitemap));
 
   for (const html of [root, gdl, mty, contacto]) {
     assert(!/SSR:|__SSR_PORTADA_|header-placeholder|footer-placeholder/.test(html));
